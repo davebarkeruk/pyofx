@@ -1,4 +1,10 @@
 #! /usr/bin/python3
+#
+# Copyright 2020 by David Barker.
+# All rights reserved.
+# This file is part of pyofx the Python3 based OpenFX plugin render host,
+# and is released under the "MIT License Agreement". Please see the LICENSE
+# file that should have been included as part of this package.
 
 import traceback
 import ctypes
