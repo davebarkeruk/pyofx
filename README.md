@@ -10,17 +10,16 @@ Tested on Ubuntu 18.04
 * Python3
 * Numpy
 * Python Image Library (PIL)
+* OFX Bundle installed, for example BorisFX Sapphire
 
 ## Usage
 
 List plugins inside an OFX bundle:  
-`python3 pyofx list <OFX Bundle Directory> <Bundle Name>`
-
+`python3 pyofx list <OFX Bundle Directory> <Bundle Name>`  
 eg:  
 `python3 pyofx list /usr/OFX/Plugins Sapphire`
 
 Render image through OFX Plugin:  
-`python3 pyofx render <OFX Bundle Directory> <Bundle Name> <Plugin Name> <Input Filename> <Output Filename\`
-
+`python3 pyofx render <OFX Bundle Directory> <Bundle Name> <Plugin Name> <Input Filename> <Output Filename\`  
 eg:  
 `python3 pyofx render /usr/OFX/Plugins Sapphire com.genarts.sapphire.Stylize.S_HalfToneColor in.png out.jpg`
