@@ -1,7 +1,7 @@
 # pyofx
 Simple Python3 host for rendering images through OpenFX plugins.
 
-Currently very bare bones opperation, with minimal number of OFX suites partially implemented. Will open and image file, process it through an OFX plugin using default parameter values, and output an image file. 
+Currently very bare bones opperation, with minimal number of OFX suites partially implemented. Will open an image file, process it through an OFX plugin using default parameter values, and output an image file. 
 
 Tested on Ubuntu 18.04
 
