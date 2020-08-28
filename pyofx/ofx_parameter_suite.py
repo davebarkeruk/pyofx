@@ -128,6 +128,8 @@ class OfxParameterSuite(object):
     def _get_double_type_string(self, param_object):
         return ctypes.cast(param_object['ctypes'].get('OfxParamPropDoubleType'), ctypes.c_char_p).value.decode('utf-8')
 
+    # This is a horrendous hack to deal with variadic args in function call.
+    # Seems to work on Linux, may crash spectacularly on other platforms 
     def _param_get_value_callback(self, ctype_param_handle, vargs):
         (param_type, param_id) = self._decode_handle(ctype_param_handle)
 
@@ -195,9 +197,9 @@ class OfxParameterSuite(object):
 
         return OFX_STATUS_OK
 
-    def _param_get_value_at_time_callback(self, paramHandle, time, vargs):
+    def _param_get_value_at_time_callback(self, ctype_param_handle, ctype_time, vargs):
         # Currently parameters don't animate so we just send back paramGetValue
-        return self._param_get_value_callback(paramHandle, vargs)
+        return self._param_get_value_callback(ctype_param_handle, vargs)
 
     ##################################################################################################################
     #
@@ -213,13 +215,62 @@ class OfxParameterSuite(object):
         print('PLACEHOLDER paramGetIntegral')
         return OFX_STATUS_FAILED
 
-    def _param_set_value_callback(self, paramHandle, vargs):
-        print('PLACEHOLDER paramSetValue')
-        return OFX_STATUS_FAILED
+    # This is a horrendous hack to deal with variadic args in function call.
+    # Seems to work on Linux, may crash spectacularly on other platforms 
+    def _param_set_value_callback(self, ctype_param_handle, d_arg_1, d_arg_2, d_arg_3, d_arg_4, i_arg_1, i_arg_2, i_arg_3, i_arg_4):
+        (param_type, param_id) = self._decode_handle(ctype_param_handle)
 
-    def _param_set_value_at_time_callback(self, paramHandle, time, vargs):
-        print('PLACEHOLDER paramSetValueAtTime')
-        return OFX_STATUS_FAILED
+        active_id = param_id.rsplit('.', 1)[0]
+        param_name = param_id.rsplit('.', 1)[1]
+
+        param_ctypes = self._host['active_plugins'][active_id]['parameters'][param_name]['ctypes']
+        ofx_property_type = ctypes.cast(param_ctypes.get('OfxParamPropType'), ctypes.c_char_p).value.decode('utf-8')
+
+        if ofx_property_type == 'OfxParamTypeInteger':
+            self._host['active_plugins'][active_id]['parameters'][param_name]['value'][0] = ctypes.c_int(i_arg_1)
+        elif ofx_property_type == 'OfxParamTypeDouble':
+            self._host['active_plugins'][active_id]['parameters'][param_name]['value'][0] = ctypes.c_double(d_arg_1)
+        elif ofx_property_type == 'OfxParamTypeBoolean':
+            self._host['active_plugins'][active_id]['parameters'][param_name]['value'][0] = ctypes.c_int(i_arg_1)
+        elif ofx_property_type == 'OfxParamTypeChoice':
+            self._host['active_plugins'][active_id]['parameters'][param_name]['value'][0] = ctypes.c_int(i_arg_1)
+        elif ofx_property_type == 'OfxParamTypeRGBA':
+            self._host['active_plugins'][active_id]['parameters'][param_name]['value'][0] = ctypes.c_double(d_arg_1)
+            self._host['active_plugins'][active_id]['parameters'][param_name]['value'][1] = ctypes.c_double(d_arg_2)
+            self._host['active_plugins'][active_id]['parameters'][param_name]['value'][2] = ctypes.c_double(d_arg_3)
+            self._host['active_plugins'][active_id]['parameters'][param_name]['value'][3] = ctypes.c_double(d_arg_4)
+        elif ofx_property_type == 'OfxParamTypeRGB':
+            self._host['active_plugins'][active_id]['parameters'][param_name]['value'][0] = ctypes.c_double(d_arg_1)
+            self._host['active_plugins'][active_id]['parameters'][param_name]['value'][1] = ctypes.c_double(d_arg_2)
+            self._host['active_plugins'][active_id]['parameters'][param_name]['value'][2] = ctypes.c_double(d_arg_3)
+        elif ofx_property_type == 'OfxParamTypeDouble2D':
+            self._host['active_plugins'][active_id]['parameters'][param_name]['value'][0] = ctypes.c_double(d_arg_1)
+            self._host['active_plugins'][active_id]['parameters'][param_name]['value'][1] = ctypes.c_double(d_arg_2)
+        elif ofx_property_type == 'OfxParamTypeInteger2D':
+            self._host['active_plugins'][active_id]['parameters'][param_name]['value'][0] = ctypes.c_int(i_arg_1)
+            self._host['active_plugins'][active_id]['parameters'][param_name]['value'][1] = ctypes.c_int(i_arg_2)
+        elif ofx_property_type == 'OfxParamTypeDouble3D':
+            self._host['active_plugins'][active_id]['parameters'][param_name]['value'][0] = ctypes.c_double(d_arg_1)
+            self._host['active_plugins'][active_id]['parameters'][param_name]['value'][1] = ctypes.c_double(d_arg_2)
+            self._host['active_plugins'][active_id]['parameters'][param_name]['value'][2] = ctypes.c_double(d_arg_3)
+        elif ofx_property_type == 'OfxParamTypeInteger3D':
+            self._host['active_plugins'][active_id]['parameters'][param_name]['value'][0] = ctypes.c_int(i_arg_1)
+            self._host['active_plugins'][active_id]['parameters'][param_name]['value'][1] = ctypes.c_int(i_arg_2)
+            self._host['active_plugins'][active_id]['parameters'][param_name]['value'][2] = ctypes.c_int(i_arg_3)
+        elif ofx_property_type == 'OfxParamTypeString':
+            va_list = ctypes.cast(vargs, ctypes.POINTER(ctypes.c_char_p))
+            print('PLACEHOLDER: paramGetValue for a OfxParamTypeString')
+        elif ofx_property_type == 'OfxParamTypePushButton':
+            self._host['active_plugins'][active_id]['parameters'][param_name]['value'][0] = ctypes.c_int(i_arg_1)
+        else:
+            print('ERROR {} is not a valid type for paramGetValue')
+            return OFX_STATUS_FAILED
+
+        return OFX_STATUS_OK
+
+    def _param_set_value_at_time_callback(self, ctype_param_handle, ctype_time, d_arg_1, d_arg_2, d_arg_3, d_arg_4, i_arg_1, i_arg_2, i_arg_3, i_arg_4):
+        # Currently parameters don't animate so we just send back paramSetValue
+        return self._param_set_value_callback(ctype_param_handle, d_arg_1, d_arg_2, d_arg_3, d_arg_4, i_arg_1, i_arg_2, i_arg_3, i_arg_4)
 
     def _param_get_num_keys_callback(self, paramHandle, numberOfKeys):
         print('PLACEHOLDER paramGetNumKeys')

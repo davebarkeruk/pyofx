@@ -130,6 +130,11 @@ class OfxImageEffectSuite():
 
         return OFX_STATUS_OK
 
+    def _clip_release_image_callback(self, imageHandle):
+        # Currently only uses the one image that'll be caught by garbage collection on exit
+        # Will need to be changed once more than one frame is rendered
+        return OFX_STATUS_OK
+
     def _abort_callback(self, imageEffect):
         # Currently host has no abort state so just return OK
         return OFX_STATUS_OK
@@ -145,6 +150,7 @@ class OfxImageEffectSuite():
         self._host['memory'][memory_id] = {
             'handle': memory_handle,
             'buffer': memory_buffer,
+            'lock_count': 0,
             'pointer': ctypes.addressof(memory_buffer),
             'size': ctype_n_bytes
             }
@@ -159,6 +165,29 @@ class OfxImageEffectSuite():
         property_id = property_set.id.decode("utf-8")
 
         ctype_return_ptr.contents.value = self._host['memory'][property_id]['pointer']
+        self._host['memory'][property_id]['lock_count'] += 1
+
+        return OFX_STATUS_OK
+
+    def _image_memory_free_callback(self, ctype_memory_handle):
+        property_set = CStructOfxHandle.from_address(ctype_memory_handle)
+        property_type = property_set.property_type.decode("utf-8")
+        property_id = property_set.id.decode("utf-8")
+
+        if self._host['memory'][property_id]['lock_count'] < 1:
+            del(self._host['memory'][property_id])
+        else:
+            print('WARNING: Trying to delete imageMemory that is still locked')
+
+        return OFX_STATUS_OK
+
+    def _image_memory_unlock_callback(self, ctype_memory_handle):
+        property_set = CStructOfxHandle.from_address(ctype_memory_handle)
+        property_type = property_set.property_type.decode("utf-8")
+        property_id = property_set.id.decode("utf-8")
+
+        if self._host['memory'][property_id]['lock_count'] > 0:
+            self._host['memory'][property_id]['lock_count'] -= 1
 
         return OFX_STATUS_OK
 
@@ -168,21 +197,11 @@ class OfxImageEffectSuite():
     #
     ##################################################################################################################
 
-    def _clip_release_image_callback(self, imageHandle):
-        print('PLACEHOLDER clipReleaseImage')
-        return OFX_STATUS_FAILED
-
     def _clip_get_region_of_definition_callback(self, clip, time, bounds):
         print('PLACEHOLDER clipGetRegionOfDefinition')
         return OFX_STATUS_FAILED
 
-    def _image_memory_free_callback(self, memoryHandle):
-        print('PLACEHOLDER imageMemoryFree')
-        return OFX_STATUS_FAILED
 
-    def _image_memory_unlock_callback(self, memoryHandle):
-        print('PLACEHOLDER imageMemoryUnlock')
-        return OFX_STATUS_FAILED
 
 
 

@@ -8,6 +8,7 @@
 
 import argparse
 import os
+import textwrap
 from PIL import Image
 from ofx_host import ofx_host
 from ofx_status_codes import *
@@ -23,25 +24,30 @@ def extant_dir(x):
     return x
 
 def valid_filetype(x):
-    if x.rsplit('.', 1)[1] not in ['png', 'PNG', 'jpg', 'JPG']:
+    if x.rsplit('.', 1)[1].lower() not in ['png', 'jpg']:
         raise argparse.ArgumentTypeError("Filetype needs to be PNG or JPG")
     return x
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Simple command line OFX plugin processor.')
-    subparsers = parser.add_subparsers(dest='subparser_name')
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
+                                     description='Simple command line OFX plugin processor.',
+                                     epilog=textwrap.dedent('''\
+                                               Command Help:
+                                                pyofx list -h      Show list command help
+                                                pyofx render -h    Show render command help
+                                               '''))
+    subparsers = parser.add_subparsers(dest='command', help='OFX host commands')
+    subparsers.required = True
 
-    list_subparser = subparsers.add_parser('list', help='List all the plugins in the OFX bundle.')
-    list_subparser.add_argument('ofx_directory', type=extant_dir,
+    bundle_parser = argparse.ArgumentParser(add_help=False)
+    bundle_parser.add_argument('ofx_directory', type=extant_dir,
                        help='Path of the ofx directory.')
-    list_subparser.add_argument('bundle', type=str,
+    bundle_parser.add_argument('bundle', type=str,
                    help='Name of the ofx bundle.')
 
-    render_subparser = subparsers.add_parser('render', help='Render OFX bundle.')
-    render_subparser.add_argument('ofx_directory', type=extant_dir,
-                   help='Path of the ofx directory.')
-    render_subparser.add_argument('bundle',
-                   help='Name of the ofx bundle.')
+    list_subparser = subparsers.add_parser('list', help='List all the plugins in the OFX bundle.', parents=[bundle_parser])
+
+    render_subparser = subparsers.add_parser('render', help='Render OFX bundle.', parents=[bundle_parser])
     render_subparser.add_argument('plugin',
                    help='Name of plugin to use.')
     render_subparser.add_argument('input_image', type=extant_file,
@@ -51,11 +57,11 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.subparser_name == 'list':
+    if args.command == 'list':
         host = ofx_host()
         if host.load_ofx_lib(args.ofx_directory, args.bundle) == OFX_STATUS_OK:
             host.list_all_plugins()
-    elif args.subparser_name == 'render':
+    elif args.command == 'render':
         input_frame = Image.open(args.input_image)
         (width, height) = input_frame.size
 

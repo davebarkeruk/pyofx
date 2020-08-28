@@ -229,7 +229,7 @@ class ofx_host():
         ptr = self._host['images']['Output']['ctypes'].get('OfxImagePropData').value
         np_array = np.ctypeslib.as_array(ctypes.cast(ptr, ctypes.POINTER(ctypes.c_ubyte)), (height,width,4))
         im = ImageOps.flip(Image.fromarray(np_array))
-        if filename.rsplit('.', 1)[1] in ['jpg', 'JPG']:
+        if filename.rsplit('.', 1)[1].lower() in ['jpg']:
             im = im.convert('RGB')
         im.save(filename)
 
