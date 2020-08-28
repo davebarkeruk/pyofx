@@ -55,7 +55,7 @@ class ofx_host():
             return self._parameter_suite.get_pointer_as_int()
         else:
             print('WARNING: {} is not supported by host'.format(requested_suite))
-            return OFX_STATUS_ERR_MISSING_HOST_FEATURE
+            return 0
 
     def list_all_plugins(self):
         for p in self._host['plugins']:
