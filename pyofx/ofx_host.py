@@ -61,6 +61,21 @@ class ofx_host():
         for p in self._host['plugins']:
             print( ctypes.cast(self._host['plugins'][p]['handle'].id, ctypes.c_char_p).value.decode('utf-8'))
 
+    def list_plugin_parameters(self, plugin_id):
+        print('\n\nPlugin Name\n===========\n\n{}\n'.format(plugin_id))
+        print('Parameters\n==========\n')
+        params = self._host['plugins'][plugin_id]['contexts']['OfxImageEffectContextFilter']['parameters']
+        for p in params:
+            param_string = params[p]['ctypes'].brief_details()
+            if param_string is not None:
+                print(param_string)
+        print('\nClips\n=====\n')
+        clips = self._host['plugins'][plugin_id]['contexts']['OfxImageEffectContextFilter']['clips']
+        for c in clips:
+            clip_string = clips[c]['ctypes'].brief_details()
+            if clip_string is not None:
+                print(clip_string)
+
     def load_ofx_lib(self, ofx_dir, bundle):
         bundle_dir = os.path.join(ofx_dir, bundle + '.ofx.bundle')
         if platform.system() == 'Linux':

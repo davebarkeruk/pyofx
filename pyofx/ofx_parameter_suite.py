@@ -201,20 +201,6 @@ class OfxParameterSuite(object):
         # Currently parameters don't animate so we just send back paramGetValue
         return self._param_get_value_callback(ctype_param_handle, vargs)
 
-    ##################################################################################################################
-    #
-    # PLACEHOLDERS
-    #
-    ##################################################################################################################
-
-    def _param_get_derivative_callback(self, paramHandle, time, vargs):
-        print('PLACEHOLDER paramGetDerivative')
-        return OFX_STATUS_FAILED
-
-    def _param_get_integral_callback(self, paramHandle, time1,  time2, vargs):
-        print('PLACEHOLDER paramGetIntegral')
-        return OFX_STATUS_FAILED
-
     # This is a horrendous hack to deal with variadic args in function call.
     # Seems to work on Linux, may crash spectacularly on other platforms 
     def _param_set_value_callback(self, ctype_param_handle, d_arg_1, d_arg_2, d_arg_3, d_arg_4, i_arg_1, i_arg_2, i_arg_3, i_arg_4):
@@ -263,7 +249,7 @@ class OfxParameterSuite(object):
         elif ofx_property_type == 'OfxParamTypePushButton':
             self._host['active_plugins'][active_id]['parameters'][param_name]['value'][0] = ctypes.c_int(i_arg_1)
         else:
-            print('ERROR {} is not a valid type for paramGetValue')
+            print('ERROR {} is not a valid type for paramGetValue'.format(ofx_property_type))
             return OFX_STATUS_FAILED
 
         return OFX_STATUS_OK
@@ -271,6 +257,20 @@ class OfxParameterSuite(object):
     def _param_set_value_at_time_callback(self, ctype_param_handle, ctype_time, d_arg_1, d_arg_2, d_arg_3, d_arg_4, i_arg_1, i_arg_2, i_arg_3, i_arg_4):
         # Currently parameters don't animate so we just send back paramSetValue
         return self._param_set_value_callback(ctype_param_handle, d_arg_1, d_arg_2, d_arg_3, d_arg_4, i_arg_1, i_arg_2, i_arg_3, i_arg_4)
+
+    ##################################################################################################################
+    #
+    # PLACEHOLDERS
+    #
+    ##################################################################################################################
+
+    def _param_get_derivative_callback(self, paramHandle, time, vargs):
+        print('PLACEHOLDER paramGetDerivative')
+        return OFX_STATUS_FAILED
+
+    def _param_get_integral_callback(self, paramHandle, time1,  time2, vargs):
+        print('PLACEHOLDER paramGetIntegral')
+        return OFX_STATUS_FAILED
 
     def _param_get_num_keys_callback(self, paramHandle, numberOfKeys):
         print('PLACEHOLDER paramGetNumKeys')

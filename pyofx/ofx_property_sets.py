@@ -206,13 +206,16 @@ class OfxPropertySet(object):
 
         print('***************************************')
 
+    def brief_details(self):
+        return None
+
 class OfxHostProperties(OfxPropertySet):
     def __init__(self):
         super().__init__()
 
         self.add('OfxPropType', 'OfxTypeImageEffectHost'),
         self.add('OfxImageEffectPropSupportedComponents', ['OfxImageComponentRGBA', 'OfxImageComponentRGB'])
-        self.add('OfxImageEffectPropSupportedContexts', ['OfxImageEffectContextFilter'])
+        self.add('OfxImageEffectPropSupportedContexts', ['OfxImageEffectContextFilter','OfxImageEffectContextGeneral'])
         self.add('OfxParamHostPropPageRowColumnCount', [10, 20])
         self.add('OfxPropName', 'pyOfx')
         self.add('OfxPropLabel', 'pyOfx')
@@ -297,6 +300,13 @@ class OfxEffectInstanceProperties(OfxPropertySet):
         self.add('OfxPropIsInteractive', 0)
 
 class OfxClipProperties(OfxPropertySet):
+    def brief_details(self):
+        clip_is_optional = int(self._data['OfxImageClipPropOptional'].value) != 0
+        return '{:20} {}'.format(
+            self.value_as_string('OfxPropName'),
+            'Optional' if  clip_is_optional else 'Required'
+            )
+
     def __init__(self, clip_name):
         super().__init__()
 
@@ -317,7 +327,7 @@ class OfxClipProperties(OfxPropertySet):
         self.add('OfxImageEffectPropComponents', 'OfxImageComponentRGBA')
         self.add('OfxImageClipPropUnmappedPixelDepth', 'OfxBitDepthByte')
         self.add('OfxImageClipPropUnmappedComponents', 'OfxImageComponentRGBA')
-        self.add('OfxImageEffectPropPreMultiplication', 'OfxImageOpaque')
+        self.add('OfxImageEffectPropPreMultiplication', 'OfxImageUnPreMultiplied')
         self.add('OfxImagePropPixelAspectRatio', 1.0)
         self.add('OfxImageEffectPropFrameRate', 29.97),
         self.add('OfxImageEffectPropFrameRange', [1.0, 10.0])
@@ -334,7 +344,7 @@ class OfxImageProperties(OfxPropertySet):
         self.add('OfxPropType', 'OfxTypeImage')
         self.add('OfxImageEffectPropPixelDepth', 'OfxBitDepthByte')
         self.add('OfxImageEffectPropComponents', 'OfxImageComponentRGBA')
-        self.add('OfxImageEffectPropPreMultiplication', 'OfxImageOpaque')
+        self.add('OfxImageEffectPropPreMultiplication', 'OfxImageUnPreMultiplied')
         self.add('OfxImageEffectPropRenderScale', [1.0, 1.0])
         self.add('OfxImagePropPixelAspectRatio', 1.0)
         self.add('OfxImagePropData', data_ptr)
@@ -351,6 +361,122 @@ class OfxParameterSetProperties(OfxPropertySet):
         self.add('OfxPropParamSetNeedsSyncing', 0)
 
 class OfxParameterProperties(OfxPropertySet):
+    _value_param_types = [
+        'OfxParamTypeInteger',
+        'OfxParamTypeDouble',
+        'OfxParamTypeBoolean',
+        'OfxParamTypeChoice',
+        'OfxParamTypeRGBA',
+        'OfxParamTypeRGB',
+        'OfxParamTypeDouble2D',
+        'OfxParamTypeInteger2D',
+        'OfxParamTypeDouble3D',
+        'OfxParamTypeInteger3D',
+        'OfxParamTypeString',
+        'OfxParamTypeCustom',
+        'OfxParamTypePushButton'
+        ]
+
+    def _is_value_param(self):
+        param_type = self.value_as_string('OfxParamPropType')
+        return param_type in OfxParameterProperties._value_param_types
+
+    def brief_details(self):
+        if not self._is_value_param():
+            return None
+
+        if self._data['OfxParamPropSecret'].value == 1:
+            return None
+
+        param_type = self.value_as_string('OfxParamPropType')
+
+        if param_type == 'OfxParamTypeInteger':
+            return '{:20} {:10} {:>10}'.format(
+                self.value_as_string('OfxParamPropScriptName'),
+                'Integer',
+                int(self._data['OfxParamPropDefault'][0].value)
+                )
+        elif param_type == 'OfxParamTypeDouble':
+            return '{:20} {:10} {:>14.3f}'.format(
+                self.value_as_string('OfxParamPropScriptName'),
+                'Double',
+                float(self._data['OfxParamPropDefault'][0].value)
+                )
+        elif param_type == 'OfxParamTypeBoolean':
+            return '{:20} {:10} {:>10}'.format(
+                self.value_as_string('OfxParamPropScriptName'),
+                'Boolean',
+                int(self._data['OfxParamPropDefault'][0].value),
+                )
+        elif param_type == 'OfxParamTypeChoice':
+            number_of_choices = len(self._data['OfxParamPropChoiceOption'])
+            active_choice = int(self._data['OfxParamPropDefault'][0].value)
+            desc_string = '{:20} {:10} {:>10}'.format(
+                          self.value_as_string('OfxParamPropScriptName'),
+                          'Choice',
+                          active_choice)
+            for choice in range(0, number_of_choices):
+                desc_string += '\n{:>43} {}'.format(
+                                '->' if choice == active_choice else '  ',
+                                self.value_as_string('OfxParamPropChoiceOption', choice)
+                                )
+            return desc_string
+        elif param_type == 'OfxParamTypeRGBA':
+            return '{:20} {:10} {:>14.3f}\n{:>46.3f}\n{:>46.3f}\n{:>46.3f}'.format(
+                self.value_as_string('OfxParamPropScriptName'),
+                'RGBA',
+                float(self._data['OfxParamPropDefault'][0].value),
+                float(self._data['OfxParamPropDefault'][1].value),
+                float(self._data['OfxParamPropDefault'][2].value),
+                float(self._data['OfxParamPropDefault'][3].value)
+                )
+        elif param_type == 'OfxParamTypeRGB':
+            return '{:20} {:10} {:>14.3f}\n{:>46.3f}\n{:>46.3f}'.format(
+                self.value_as_string('OfxParamPropScriptName'),
+                'RGB',
+                float(self._data['OfxParamPropDefault'][0].value),
+                float(self._data['OfxParamPropDefault'][1].value),
+                float(self._data['OfxParamPropDefault'][2].value)
+                )
+        elif param_type == 'OfxParamTypeDouble2D':
+            return '{:20} {:10} {:>14.3f}\n{:>46.3f}'.format(
+                self.value_as_string('OfxParamPropScriptName'),
+                'Double 2D',
+                float(self._data['OfxParamPropDefault'][0].value),
+                float(self._data['OfxParamPropDefault'][1].value)
+                )
+        elif param_type == 'OfxParamTypeInteger2D':
+            return '{:20} {:10} {:>10}\n{:>42}'.format(
+                self.value_as_string('OfxParamPropScriptName'),
+                'Integer 2D',
+                int(self._data['OfxParamPropDefault'][0].value),
+                int(self._data['OfxParamPropDefault'][1].value)
+                )
+        elif param_type == 'OfxParamTypeDouble3D':
+             return '{:20} {:10} {:>14.3f}\n{:>46.3f}\n{:>46.3f}'.format(
+                self.value_as_string('OfxParamPropScriptName'),
+                'Double 3D',
+                float(self._data['OfxParamPropDefault'][0].value),
+                float(self._data['OfxParamPropDefault'][1].value),
+                float(self._data['OfxParamPropDefault'][2].value)
+                )
+        elif param_type == 'OfxParamTypeInteger3D':
+             return '{:20} {:10} {:>10}\n{:>42}\n{:>42}'.format(
+                self.value_as_string('OfxParamPropScriptName'),
+                'Integer 3D',
+                int(self._data['OfxParamPropDefault'][0].value),
+                int(self._data['OfxParamPropDefault'][1].value),
+                int(self._data['OfxParamPropDefault'][2].value)
+                )
+        elif param_type == 'OfxParamTypeString':
+            return '{:20} {:10}        {}'.format(
+                self.value_as_string('OfxParamPropScriptName'),
+                'String',
+                self.value_as_string('OfxParamPropDefault', 0)
+                )
+
+        return
+
     def __init__(self, param_name, param_type):
         super().__init__()
 
@@ -426,13 +552,15 @@ class OfxParameterProperties(OfxPropertySet):
             self._string_params()
         elif param_type == 'OfxParamTypeCustom':
             self._not_group_or_page_params()
+            self._value_params(1, 'str')
+            self._custom_params()
+        elif param_type == 'OfxParamTypePushButton':
+            self._not_group_or_page_params()
+            self._value_params(1, 'int')
         elif param_type == 'OfxParamTypeGroup':
             self._group_params()
         elif param_type == 'OfxParamTypePage':
             self._page_params()
-        elif param_type == 'OfxParamTypePushButton':
-            self._not_group_or_page_params()
-            self._value_params(1, 'int')
         else:
             print('ERROR: {} invalid type for parameter'.format(param_type))
 

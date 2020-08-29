@@ -36,24 +36,38 @@ if __name__ == "__main__":
                                                 pyofx list -h      Show list command help
                                                 pyofx render -h    Show render command help
                                                '''))
-    subparsers = parser.add_subparsers(dest='command', help='OFX host commands')
+    subparsers = parser.add_subparsers(dest='command',
+                                       help='OFX host commands')
     subparsers.required = True
 
     bundle_parser = argparse.ArgumentParser(add_help=False)
-    bundle_parser.add_argument('ofx_directory', type=extant_dir,
-                       help='Path of the ofx directory.')
+    bundle_parser.add_argument('ofx_directory',
+                               type=extant_dir,
+                               help='Path of the ofx directory.')
     bundle_parser.add_argument('bundle', type=str,
-                   help='Name of the ofx bundle.')
+                               help='Name of the ofx bundle.')
 
-    list_subparser = subparsers.add_parser('list', help='List all the plugins in the OFX bundle.', parents=[bundle_parser])
+    list_subparser = subparsers.add_parser('list',
+                                           help='List all the plugins in the OFX bundle.',
+                                           parents=[bundle_parser])
 
-    render_subparser = subparsers.add_parser('render', help='Render OFX bundle.', parents=[bundle_parser])
+    describe_subparser = subparsers.add_parser('desc',
+                                               help='Describe an OFX Plugin.',
+                                               parents=[bundle_parser])
+    describe_subparser.add_argument('plugin',
+                                    help='Name of plugin to use.')
+
+    render_subparser = subparsers.add_parser('render',
+                                             help='Render an OFX Plugin.',
+                                             parents=[bundle_parser])
     render_subparser.add_argument('plugin',
-                   help='Name of plugin to use.')
-    render_subparser.add_argument('input_image', type=extant_file,
-                   help='Filename of input image.')
-    render_subparser.add_argument('output_image', type=valid_filetype,
-                   help='Filename of output image.')
+                                  help='Name of plugin to use.')
+    render_subparser.add_argument('input_image',
+                                  type=extant_file,
+                                  help='Filename of input image.')
+    render_subparser.add_argument('output_image',
+                                  type=valid_filetype,
+                                  help='Filename of output image.')
 
     args = parser.parse_args()
 
@@ -61,6 +75,11 @@ if __name__ == "__main__":
         host = ofx_host()
         if host.load_ofx_lib(args.ofx_directory, args.bundle) == OFX_STATUS_OK:
             host.list_all_plugins()
+    elif args.command == 'desc':
+        host = ofx_host()
+        if host.load_ofx_lib(args.ofx_directory, args.bundle) == OFX_STATUS_OK:
+            status = host.plugin_load_and_describe(args.plugin)
+            status = host.list_plugin_parameters(args.plugin)
     elif args.command == 'render':
         input_frame = Image.open(args.input_image)
         (width, height) = input_frame.size
