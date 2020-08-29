@@ -18,7 +18,7 @@ List plugins inside an OFX bundle:
 python3 pyofx list \<OFX Bundle Directory\> \<Bundle Name\>
 
 List a plugin's parameters:  
-python3 pyofx render \<OFX Bundle Directory\> \<Bundle Name\> \<Plugin Name\>
+python3 pyofx desc \<OFX Bundle Directory\> \<Bundle Name\> \<Plugin Name\>
 
 Render image through OFX Plugin:  
 python3 pyofx render \<OFX Bundle Directory\> \<Bundle Name\> \<Plugin Name\> \<Input Filename\> \<Output Filename\>
