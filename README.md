@@ -16,10 +16,12 @@ Tested on Ubuntu 18.04
 
 List plugins inside an OFX bundle:  
 `python3 pyofx list <OFX Bundle Directory> <Bundle Name>`  
-eg:  
-`python3 pyofx list /usr/OFX/Plugins Sapphire`
+eg: `python3 pyofx list /usr/OFX/Plugins Sapphire`
+
+List a plugin's parameters:  
+`python3 pyofx render <OFX Bundle Directory> <Bundle Name> <Plugin Name>`  
+eg: `python3 pyofx render /usr/OFX/Plugins Sapphire com.genarts.sapphire.Stylize.S_HalfToneColor`
 
 Render image through OFX Plugin:  
-`python3 pyofx render <OFX Bundle Directory> <Bundle Name> <Plugin Name> <Input Filename> <Output Filename\`  
-eg:  
-`python3 pyofx render /usr/OFX/Plugins Sapphire com.genarts.sapphire.Stylize.S_HalfToneColor in.png out.jpg`
+`python3 pyofx render <OFX Bundle Directory> <Bundle Name> <Plugin Name> <Input Filename> <Output Filename>`  
+eg: `python3 pyofx render /usr/OFX/Plugins Sapphire com.genarts.sapphire.Stylize.S_HalfToneColor in.png out.jpg`
