@@ -203,7 +203,10 @@ class OfxPropertySuite():
             print('WARNING: propSetPointer, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
 
-        property_obj.update(ctype_string.decode('utf-8'), ctype_value, 'ptr', ctype_index)
+        if ctype_value:
+            property_obj.update(ctype_string.decode('utf-8'), ctype_value, 'ptr', ctype_index)
+        else:
+            property_obj.update(ctype_string.decode('utf-8'), 0, 'ptr', ctype_index)
 
         return OFX_STATUS_OK
 

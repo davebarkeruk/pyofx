@@ -486,7 +486,29 @@ class CStructOfxMultiThreadSuite(ctypes.Structure):
                  ('mutexUnLock', cfunc_mutex_unlock),
                  ('mutexTryLock', cfunc_mutex_try_lock)]
 
+########################################################################################
+#
+# CTYPE Message Suite functions and structure
+#
+########################################################################################
 
+cfunc_message = ctypes.CFUNCTYPE(ctypes.c_int,
+                                 ctypes.c_void_p,
+                                 ctypes.c_char_p,
+                                 ctypes.c_char_p)
+
+cfunc_set_persistent_message =  ctypes.CFUNCTYPE(ctypes.c_int,
+                                                 ctypes.c_void_p,
+                                                 ctypes.c_char_p,
+                                                 ctypes.c_char_p)
+
+cfunc_clear_persistent_message = ctypes.CFUNCTYPE(ctypes.c_int,
+                                                  ctypes.c_void_p)
+
+class CStructOfxMessageSuite(ctypes.Structure):
+     _fields_ = [('message', cfunc_message),
+                 ('setPersistentMessage', cfunc_set_persistent_message),
+                 ('clearPersistentMessage', cfunc_clear_persistent_message)]
 
 
 

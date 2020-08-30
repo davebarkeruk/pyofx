@@ -17,6 +17,7 @@ from ofx_parameter_suite import *
 from ofx_image_effect_suite import *
 from ofx_memory_suite import *
 from ofx_multi_thread_suite import *
+from ofx_message_suite import *
 from ofx_property_sets import *
 from ofx_status_codes import *
 from PIL import Image, ImageOps
@@ -47,6 +48,7 @@ class ofx_host():
         self._image_effect_suite = OfxImageEffectSuite(self._host)
         self._memory_suite = OfxMemorySuite()
         self._multi_thread_suite = OfxMultiThreadSuite()
+        self._message_suite = OfxMessageSuite()
 
     def _fetch_suite(self, ctype_handle, ctype_name, ctype_version):
         requested_suite = ctype_name.decode("utf-8")
@@ -61,6 +63,8 @@ class ofx_host():
             return self._memory_suite.get_pointer_as_int()
         elif requested_suite == 'OfxMultiThreadSuite':
             return self._multi_thread_suite.get_pointer_as_int()
+        elif requested_suite == 'OfxMessageSuite':
+            return self._message_suite.get_pointer_as_int()
         else:
             print('WARNING: {} is not supported by host'.format(requested_suite))
             return 0
@@ -158,14 +162,10 @@ class ofx_host():
         plugin = self._host['plugins'][plugin_id]
         entry_point = cfunc_plugin_entry_point(plugin['mainEntry'])
 
-        print('=== OfxActionLoad')
-
         entry_point(ctypes.c_char_p(b'OfxActionLoad'),
                     0,
                     0,
                     0)
-
-        print('=== OfxActionDescribe')
 
         entry_point(ctypes.c_char_p(b'OfxActionDescribe'),
                     ctypes.pointer(plugin['handle']),
@@ -191,8 +191,6 @@ class ofx_host():
 
                 plugin['contexts'][context_string] = context_descriptor
 
-                print('=== OfxImageEffectActionDescribeInContext {}'.format(context_string))
-
                 entry_point(ctypes.c_char_p(b'OfxImageEffectActionDescribeInContext'),
                             ctypes.pointer(context_handle),
                             ctypes.pointer(context_handle),
@@ -205,8 +203,6 @@ class ofx_host():
         entry_point = cfunc_plugin_entry_point(plugin['mainEntry'])
 
         active_id = self._add_active_plugin(plugin_id, 'OfxImageEffectContextFilter', width, height)
-
-        print('=== OfxActionCreateInstance')
 
         entry_point(ctypes.c_char_p(b'OfxActionCreateInstance'),
                     ctypes.pointer(self._host['active_plugins'][active_id]['handle']),
@@ -280,14 +276,10 @@ class ofx_host():
 
         self._host['render_actions'][active_id] = render_props
 
-        print('=== OfxImageEffectActionBeginSequenceRender')
-
         entry_point(ctypes.c_char_p(b'OfxImageEffectActionBeginSequenceRender'),
                     ctypes.pointer(self._host['active_plugins'][active_id]['handle']),
                     ctypes.pointer(sequence_render_handle),
                     0)
-
-        print('=== OfxImageEffectActionRender')
 
         self.load_image(in_filename, width, height)
 
@@ -298,8 +290,6 @@ class ofx_host():
 
         self.save_output_buffer(out_filename, width, height)
         # delete source buffer
-
-        print('=== OfxImageEffectActionEndSequenceRender')
 
         entry_point(ctypes.c_char_p(b'OfxImageEffectActionEndSequenceRender'),
                     ctypes.pointer(self._host['active_plugins'][active_id]['handle']),
@@ -316,16 +306,12 @@ class ofx_host():
         plugin = self._host['plugins'][plugin_id]
         entry_point = cfunc_plugin_entry_point(plugin['mainEntry'])
 
-        print('=== OfxActionDestroyInstance')
-
         entry_point(ctypes.c_char_p(b'OfxActionDestroyInstance'),
                     ctypes.pointer(self._host['active_plugins'][active_id]['handle']),
                     0,
                     0)
 
         # delete plugin instance
-
-        print('=== OfxActionUnload')
 
         return OFX_STATUS_OK
 

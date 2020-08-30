@@ -123,7 +123,7 @@ OFX_PROPERTY_DEFS = {
     'OfxImageEffectPluginPropHostFrameThreading': {
         'param_type':  'int',
         'dimensions':   1,
-        'default':      1,
+        'default':      0,
         'valid_values': [0, 1]
     },
     'OfxImageEffectPluginPropOverlayInteractV1': {

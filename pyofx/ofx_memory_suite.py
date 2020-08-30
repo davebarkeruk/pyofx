@@ -28,7 +28,7 @@ class OfxMemorySuite(object):
         # ignoring the ctype_instance_handle as it often NULL
 
         buffer = (ctypes.c_byte * ctype_n_bytes)()
-        pointer = ctypes.addressof(memory_buffer)
+        pointer = ctypes.addressof(buffer)
 
         self._active_memory[pointer] = {
             'buffer': buffer,
