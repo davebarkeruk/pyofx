@@ -419,7 +419,7 @@ class CStructOfxImageEffectSuite(ctypes.Structure):
 
 ########################################################################################
 #
-# CTYPE Parameter Suite functions and structure
+# CTYPE Memory Suite functions and structure
 #
 ########################################################################################
 
@@ -434,6 +434,60 @@ cfunc_memory_free =  ctypes.CFUNCTYPE(ctypes.c_int,
 class CStructOfxMemorySuite(ctypes.Structure):
      _fields_ = [('memoryAlloc', cfunc_memory_alloc),
                  ('memoryFree',  cfunc_memory_free)]
+
+########################################################################################
+#
+# CTYPE Thread Suite functions and structure
+#
+########################################################################################
+
+cfunc_thread_function = ctypes.CFUNCTYPE(ctypes.c_int,
+                                         ctypes.c_uint,
+                                         ctypes.c_uint,
+                                         ctypes.c_void_p)
+
+cfunc_multi_thread =  ctypes.CFUNCTYPE(ctypes.c_int,
+                                       ctypes.c_void_p,
+                                       ctypes.c_uint,
+                                       ctypes.c_void_p)
+
+cfunc_multi_thread_num_cpus = ctypes.CFUNCTYPE(ctypes.c_int,
+                                               ctypes.POINTER(ctypes.c_uint))
+
+cfunc_multi_thread_index = ctypes.CFUNCTYPE(ctypes.c_int,
+                                            ctypes.POINTER(ctypes.c_uint)) 
+
+cfunc_multi_thread_is_spawned_thread = ctypes.CFUNCTYPE(ctypes.c_int)
+
+cfunc_mutex_create = ctypes.CFUNCTYPE(ctypes.c_int,
+                                      ctypes.POINTER(ctypes.c_void_p),
+                                      ctypes.c_int)
+
+cfunc_mutex_destroy = ctypes.CFUNCTYPE(ctypes.c_int,
+                                       ctypes.c_void_p)
+
+cfunc_mutex_lock = ctypes.CFUNCTYPE(ctypes.c_int,
+                                    ctypes.c_void_p)
+
+cfunc_mutex_unlock = ctypes.CFUNCTYPE(ctypes.c_int,
+                                      ctypes.c_void_p)
+
+cfunc_mutex_try_lock = ctypes.CFUNCTYPE(ctypes.c_int,
+                                        ctypes.c_void_p)
+
+class CStructOfxMultiThreadSuite(ctypes.Structure):
+     _fields_ = [('multiThread', cfunc_multi_thread),
+                 ('multiThreadNumCPUs', cfunc_multi_thread_num_cpus),
+                 ('multiThreadIndex', cfunc_multi_thread_index),
+                 ('multiThreadIsSpawnedThread', cfunc_multi_thread_is_spawned_thread),
+                 ('mutexCreate)(OfxMutexHandle', cfunc_mutex_create),
+                 ('mutexDestroy', cfunc_mutex_destroy),
+                 ('mutexLock', cfunc_mutex_lock),
+                 ('mutexUnLock', cfunc_mutex_unlock),
+                 ('mutexTryLock', cfunc_mutex_try_lock)]
+
+
+
 
 
 
