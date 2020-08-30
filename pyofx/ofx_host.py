@@ -76,7 +76,7 @@ class ofx_host():
             if clip_string is not None:
                 print(clip_string)
 
-    def load_ofx_lib(self, ofx_dir, bundle):
+    def load_ofx_binary(self, ofx_dir, bundle):
         bundle_dir = os.path.join(ofx_dir, bundle + '.ofx.bundle')
         if platform.system() == 'Linux':
             filename = os.path.join(bundle_dir, 'Contents', 'Linux-x86-64', bundle + '.ofx')
@@ -119,7 +119,7 @@ class ofx_host():
         return OFX_STATUS_OK
 
     def _add_active_plugin(self, plugin_id, context, width, height):
-        active_id = ('fx_%05d'%(len(self._host['active_plugins'])))
+        active_id = 'fx_{:05d}'.format(len(self._host['active_plugins']))
 
         effect_handle = CStructOfxHandle(ctypes.c_char_p(b'OfxTypeImageEffectInstance'),
                                          ctypes.c_char_p(active_id.encode('utf-8')))
@@ -170,7 +170,7 @@ class ofx_host():
                                for i in plugin['ctypes'].get('OfxImageEffectPropSupportedContexts')]
 
             if context_string in plugin_contexts:
-                context_id = '%s.%s'%(plugin_id, context_string)
+                context_id = '{}.{}'.format(plugin_id, context_string)
 
                 context_handle = CStructOfxHandle(ctypes.c_char_p(b'OfxImageEffectPropContext'),
                                                   ctypes.c_char_p(context_id.encode('utf-8')))
@@ -183,7 +183,7 @@ class ofx_host():
 
                 plugin['contexts'][context_string] = context_descriptor
 
-                print('=== OfxImageEffectActionDescribeInContext %s'%context_string)
+                print('=== OfxImageEffectActionDescribeInContext {}'.format(context_string))
 
                 entry_point(ctypes.c_char_p(b'OfxImageEffectActionDescribeInContext'),
                             ctypes.pointer(context_handle),

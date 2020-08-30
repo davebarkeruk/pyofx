@@ -60,7 +60,7 @@ class OfxParameterSuite(object):
     def create_parameter_instance(self, parameter_descriptor, instance_id):
         descriptor_id = parameter_descriptor['handle'].id.decode("utf-8")
         descriptor_name = descriptor_id.rsplit('.', 1)[1]
-        instance_param_id = '%s.%s'%(instance_id, descriptor_name)
+        instance_param_id = '{}.{}'.format(instance_id, descriptor_name)
 
         parameter_handle = CStructOfxHandle("OfxTypeParameterInstance".encode('utf-8'),
                                                        instance_param_id.encode('utf-8'))
@@ -88,7 +88,7 @@ class OfxParameterSuite(object):
         plugin_id = property_id.rsplit('.', 1)[0]
         context_id = property_id.rsplit('.', 1)[1]
         param_name = ctype_name.decode("utf-8")
-        param_id = "%s.%s"%(property_id, param_name)
+        param_id = '{}.{}'.format(property_id, param_name)
 
         param_handle = CStructOfxHandle("OfxTypeParameter".encode('utf-8'),
                                         param_id.encode('utf-8'))
@@ -192,7 +192,7 @@ class OfxParameterSuite(object):
             va_list = ctypes.cast(vargs, ctypes.POINTER(ctypes.c_int))
             va_list[0] = self._host['active_plugins'][active_id]['parameters'][param_name]['value'][0].value
         else:
-            print('ERROR {} is not a valid type for paramGetValue')
+            print('ERROR {} is not a valid type for paramGetValue ({})'.format(ofx_property_type, param_name))
             return OFX_STATUS_FAILED
 
         return OFX_STATUS_OK
@@ -249,7 +249,7 @@ class OfxParameterSuite(object):
         elif ofx_property_type == 'OfxParamTypePushButton':
             self._host['active_plugins'][active_id]['parameters'][param_name]['value'][0] = ctypes.c_int(i_arg_1)
         else:
-            print('ERROR {} is not a valid type for paramGetValue'.format(ofx_property_type))
+            print('ERROR {} is not a valid type for paramSetValue ({})'.format(ofx_property_type, param_name))
             return OFX_STATUS_FAILED
 
         return OFX_STATUS_OK

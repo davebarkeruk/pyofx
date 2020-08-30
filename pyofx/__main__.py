@@ -30,14 +30,10 @@ def valid_filetype(x):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
-                                     description='Simple command line OFX plugin processor.',
-                                     epilog=textwrap.dedent('''\
-                                               Command Help:
-                                                pyofx list -h      Show list command help
-                                                pyofx render -h    Show render command help
-                                               '''))
+                                     description='Simple command line OFX plugin render host.',
+                                     epilog='Use -h on commands for further info.\n')
     subparsers = parser.add_subparsers(dest='command',
-                                       help='OFX host commands')
+                                       metavar='{command}')
     subparsers.required = True
 
     bundle_parser = argparse.ArgumentParser(add_help=False)
@@ -73,11 +69,11 @@ if __name__ == "__main__":
 
     if args.command == 'list':
         host = ofx_host()
-        if host.load_ofx_lib(args.ofx_directory, args.bundle) == OFX_STATUS_OK:
+        if host.load_ofx_binary(args.ofx_directory, args.bundle) == OFX_STATUS_OK:
             host.list_all_plugins()
     elif args.command == 'desc':
         host = ofx_host()
-        if host.load_ofx_lib(args.ofx_directory, args.bundle) == OFX_STATUS_OK:
+        if host.load_ofx_binary(args.ofx_directory, args.bundle) == OFX_STATUS_OK:
             status = host.plugin_load_and_describe(args.plugin)
             status = host.list_plugin_parameters(args.plugin)
     elif args.command == 'render':
@@ -85,7 +81,7 @@ if __name__ == "__main__":
         (width, height) = input_frame.size
 
         host = ofx_host()
-        if host.load_ofx_lib(args.ofx_directory, args.bundle) == OFX_STATUS_OK:
+        if host.load_ofx_binary(args.ofx_directory, args.bundle) == OFX_STATUS_OK:
             status = host.plugin_load_and_describe(args.plugin)
             (instance_id, status) = host.create_plugin_instance(args.plugin, width, height)
             status = host.render(args.plugin, instance_id, args.input_image, args.output_image, width, height)
