@@ -1,3 +1,5 @@
+![pyofx](/docs/images/pyofx.jpg)
+
 # pyofx
 Simple Python3 host for rendering images through OpenFX plugins.
 
@@ -14,11 +16,18 @@ Tested on Ubuntu 18.04
 
 ## Usage
 
-List plugins inside an OFX bundle:  
-python3 pyofx list \<OFX Bundle Directory\> \<Bundle Name\>
+There are three commands, list, describe and render. List displays all the available plugins in an OFX bundle. Describe displays all the parameters in the selected plugin. Render takes an input image, processes it through the selected plugin and saves the output.
 
-List a plugin's parameters:  
-python3 pyofx desc \<OFX Bundle Directory\> \<Bundle Name\> \<Plugin Name\>
+Command | Details
+-- | --
+List | pyofx list \<dir\> \<bundle\>
+Describe | pyofx desc \<dir\> \<bundle\> \<plugin\>
+Render | pyofx render \<dir\> \<bundle\> \<plugin\> \<infile\> \<outfile\>
 
-Render image through OFX Plugin:  
-python3 pyofx render \<OFX Bundle Directory\> \<Bundle Name\> \<Plugin Name\> \<Input Filename\> \<Output Filename\>
+Argument| Description
+-- | --
+\<dir\> | Path to the ofx bundle directory.
+\<bundle\> | Name of the ofx bundle to load.
+\<plugin\> | Name of plugin to use.
+\<infile\> | Filename of input image.
+\<outfile\> | Filename of output image.
