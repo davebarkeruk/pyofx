@@ -8,7 +8,6 @@
 
 import argparse
 import os
-import textwrap
 from PIL import Image
 from ofx_host import ofx_host
 from ofx_status_codes import *
