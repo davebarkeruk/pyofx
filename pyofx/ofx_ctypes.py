@@ -417,3 +417,23 @@ class CStructOfxImageEffectSuite(ctypes.Structure):
                  ('imageMemoryLock',           cfunc_image_memory_lock),
                  ('imageMemoryUnlock',         cfunc_image_memory_unlock)]
 
+########################################################################################
+#
+# CTYPE Parameter Suite functions and structure
+#
+########################################################################################
+
+cfunc_memory_alloc = ctypes.CFUNCTYPE(ctypes.c_int,
+                                      ctypes.c_void_p,
+                                      ctypes.c_int,
+                                      ctypes.POINTER(ctypes.c_void_p))
+
+cfunc_memory_free =  ctypes.CFUNCTYPE(ctypes.c_int,
+                                      ctypes.c_void_p)
+
+class CStructOfxMemorySuite(ctypes.Structure):
+     _fields_ = [('memoryAlloc', cfunc_memory_alloc),
+                 ('memoryFree',  cfunc_memory_free)]
+
+
+

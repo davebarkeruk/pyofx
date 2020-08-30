@@ -15,6 +15,7 @@ from ofx_ctypes import *
 from ofx_property_suite import *
 from ofx_parameter_suite import *
 from ofx_image_effect_suite import *
+from ofx_memory_suite import *
 from ofx_property_sets import *
 from ofx_status_codes import *
 from PIL import Image, ImageOps
@@ -43,6 +44,7 @@ class ofx_host():
         self._property_suite = OfxPropertySuite(self._host)
         self._parameter_suite = OfxParameterSuite(self._host)
         self._image_effect_suite = OfxImageEffectSuite(self._host)
+        self._memory_suite = OfxMemorySuite()
 
     def _fetch_suite(self, ctype_handle, ctype_name, ctype_version):
         requested_suite = ctype_name.decode("utf-8")
@@ -53,6 +55,8 @@ class ofx_host():
             return self._property_suite.get_pointer_as_int()
         elif requested_suite == 'OfxParameterSuite':
             return self._parameter_suite.get_pointer_as_int()
+        elif requested_suite == 'OfxMemorySuite':
+            return self._memory_suite.get_pointer_as_int()
         else:
             print('WARNING: {} is not supported by host'.format(requested_suite))
             return 0
