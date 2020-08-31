@@ -74,25 +74,32 @@ if __name__ == "__main__":
     if args.command == 'list':
         host = ofx_host()
         if host.load_ofx_binary(args.dir, args.bundle) == OFX_STATUS_OK:
-            host.list_all_plugins()
+            host.list_all_plugins(args.bundle)
     elif args.command == 'desc':
         host = ofx_host()
         if host.load_ofx_binary(args.dir, args.bundle) == OFX_STATUS_OK:
-            status = host.plugin_load_and_describe(args.plugin)
-            status = host.list_plugin_parameters(args.plugin)
+            status = host.plugin_load_and_describe(args.bundle, args.plugin)
+            status = host.list_plugin_parameters(args.bundle, args.plugin)
             if args.json is not None:
-                status = host.save_plugin_parameters(args.plugin, args.json)
+                status = host.save_plugin_parameters(args.bundle, args.plugin, args.json)
     elif args.command == 'render':
         input_frame = Image.open(args.infile)
         (width, height) = input_frame.size
 
         host = ofx_host()
         if host.load_ofx_binary(args.dir, args.bundle) == OFX_STATUS_OK:
-            status = host.plugin_load_and_describe(args.plugin)
-            (instance_id, status) = host.create_plugin_instance(args.plugin, width, height)
+            status = host.plugin_load_and_describe(args.bundle, args.plugin)
+            (active_uid, status) = host.create_plugin_instance(args.bundle, args.plugin, width, height)
             if args.json is not None:
-                status = host.load_plugin_parameters(instance_id, args.json)
-            status = host.render(args.plugin, instance_id, args.infile, args.outfile, width, height)
-            status = host.destroy_plugin_instance(args.plugin, instance_id)
-            status = host.unload_plugin(args.plugin)
+                status = host.load_plugin_parameters(active_uid, args.json)
+            status = host.begin_render_sequence(active_uid)
+            status = host.connect_image(active_uid, 'Source', args.infile, width, height)
+            status = host.connect_buffer(active_uid, 'Output', width, height)
+            status = host.render(active_uid, width, height)
+            status = host.save_image(active_uid, 'Output', args.outfile, width, height)
+            status = host.disconnect_image(active_uid, 'Source')
+            status = host.disconnect_buffer(active_uid, 'Output')
+            status = host.end_render_sequence(active_uid)
+            status = host.destroy_plugin_instance(active_uid)
+            status = host.unload_plugin(args.bundle, args.plugin)
 

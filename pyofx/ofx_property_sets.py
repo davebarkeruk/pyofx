@@ -51,7 +51,6 @@ class OfxPropertySet(object):
             print('ERROR: {} invalid type for single dimension property'.format(new_type))
             return False
 
-        #print((key,self._data[key]))
         if key in self._data:
             if isinstance(self._data[key], list) and index is not None:
                 if 0 <= index < len(self._data[key]):
@@ -275,7 +274,6 @@ class OfxEffectContextProperties(OfxPropertySet):
     def __init__(self, context_string):
         super().__init__()
 
-        #self.add('OfxPropType', 'OfxImageEffectPropContext')
         self.add('OfxImageEffectPropContext', context_string)
 
 class OfxEffectInstanceProperties(OfxPropertySet):
@@ -329,7 +327,7 @@ class OfxClipProperties(OfxPropertySet):
         self.add('OfxImageEffectPropFrameRate', 29.97),
         self.add('OfxImageEffectPropFrameRange', [1.0, 10.0])
         self.add('OfxImageClipPropFieldOrder', 'OfxImageFieldNone')
-        self.add('OfxImageClipPropConnected', 1)
+        self.add('OfxImageClipPropConnected', 0)
         self.add('OfxImageEffectPropUnmappedFrameRange', [1.0, 10.0])
         self.add('OfxImageEffectPropUnmappedFrameRate', 29.97)
         self.add('OfxImageClipPropContinuousSamples', 0)

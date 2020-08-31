@@ -33,7 +33,11 @@ cfunc_plugin_entry_point = ctypes.CFUNCTYPE(ctypes.c_int,
 
 class CStructOfxHandle(ctypes.Structure):
      _fields_ = [('property_type', ctypes.c_char_p),
-                 ('id',            ctypes.c_char_p)]
+                 ('bundle',        ctypes.c_char_p),
+                 ('plugin',        ctypes.c_char_p),
+                 ('context',       ctypes.c_char_p),
+                 ('active_uid',    ctypes.c_char_p),
+                 ('name',          ctypes.c_char_p)]
 
 class CStructOfxHost(ctypes.Structure):
      _fields_ = [("host",       ctypes.POINTER(CStructOfxHandle)),

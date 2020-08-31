@@ -26,9 +26,11 @@ class OfxMessageSuite(object):
         self._set_persistant_message =   cfunc_set_persistent_message(self._set_persistant_message_callback)
         self._clear_persistant_message = cfunc_clear_persistent_message(self._clear_persistant_message_callback)
 
-        self._suite = CStructOfxMessageSuite(self._message,
-                                             self._set_persistant_message,
-                                             self._clear_persistant_message)
+        self._suite = CStructOfxMessageSuite(
+            self._message,
+            self._set_persistant_message,
+            self._clear_persistant_message
+        )
 
     def get_pointer_as_int(self):
         return ctypes.cast(ctypes.pointer(self._suite), ctypes.c_void_p).value
@@ -67,11 +69,11 @@ class OfxMessageSuite(object):
         return self._display_message(message_type)
 
     def _set_persistant_message_callback(self, ctype_handle, ctype_message_type, ctype_message_id, ctype_format):
-        handle_structure = CStructOfxHandle.from_address(ctype_handle)
-        handle_id = handle_structure.id.decode("utf-8")
+        handle = CStructOfxHandle.from_address(ctype_handle)
+        name = handle.name.decode("utf-8")
 
         message_type = ctype_message_type.decode("utf-8")
-        return self._display_message(message_type, handle_id)
+        return self._display_message(message_type, name)
 
     def _clear_persistant_message_callback(self, ctype_handle):
         return OFX_STATUS_OK

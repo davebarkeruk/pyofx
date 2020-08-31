@@ -12,6 +12,7 @@ import copy
 import platform
 import os
 import json
+import uuid
 from ofx_ctypes import *
 from ofx_property_suite import *
 from ofx_parameter_suite import *
@@ -26,28 +27,31 @@ import numpy as np
 
 class ofx_host():
     def __init__(self):
-        host_handle = CStructOfxHandle(ctypes.c_char_p(b'OfxTypeImageEffectHost'),
-                                       ctypes.c_char_p(b'pyOfx'))
+        host_handle = CStructOfxHandle(
+            ctypes.c_char_p(b'OfxTypeImageEffectHost'),
+            ctypes.c_char_p(b''),
+            ctypes.c_char_p(b''),
+            ctypes.c_char_p(b''),
+            ctypes.c_char_p(b''),
+            ctypes.c_char_p(b'pyofx')
+        )
 
         fetch_suite_func = cfunc_fetch_suite(self._fetch_suite)
         host_struct = CStructOfxHost(ctypes.pointer(host_handle), fetch_suite_func)
 
-        self._host = {'handle':           host_handle,
-                      'fetchSuiteFunc':   fetch_suite_func,
-                      'hostStruct':       host_struct,
-                      'libs':             [],
-                      'plugins':          {},
-                      'active_plugins':   {},
-                      'render_sequences': {},
-                      'render_actions':   {},
-                      'images':           {},
-                      'memory':           {},
-                      'ctypes':           OfxHostProperties()}
+        self._host = {
+            'handle':         host_handle,
+            'fetchSuiteFunc': fetch_suite_func,
+            'hostStruct':     host_struct,
+            'bundles':        {},
+            'active':         {'plugins':{}, 'memory':{}},
+            'ctypes':         OfxHostProperties()
+        }
 
         self._property_suite = OfxPropertySuite(self._host)
         self._parameter_suite = OfxParameterSuite(self._host)
         self._image_effect_suite = OfxImageEffectSuite(self._host)
-        self._memory_suite = OfxMemorySuite()
+        self._memory_suite = OfxMemorySuite(self._host)
         self._multi_thread_suite = OfxMultiThreadSuite()
         self._message_suite = OfxMessageSuite()
 
@@ -70,29 +74,36 @@ class ofx_host():
             print('WARNING: {} is not supported by host'.format(requested_suite))
             return 0
 
-    def list_all_plugins(self):
-        for p in self._host['plugins']:
-            print( ctypes.cast(self._host['plugins'][p]['handle'].id, ctypes.c_char_p).value.decode('utf-8'))
+    def list_all_plugins(self, bundle):
+        for p in self._host['bundles'][bundle]['plugins']:
+            print(p)
 
-    def list_plugin_parameters(self, plugin_id):
-        print('\n\nPlugin Name\n===========\n\n{}\n'.format(plugin_id))
-        print('Parameters\n==========\n')
-        params = self._host['plugins'][plugin_id]['contexts']['OfxImageEffectContextFilter']['parameters']
+    def list_plugin_parameters(self, bundle, plugin_id, context='OfxImageEffectContextFilter'):
+        print('\n')
+        print('Plugin Name')
+        print('===========\n')
+        print('{}\n'.format(plugin_id))
+        print('Parameters')
+        print('==========\n')
+        params = self._host['bundles'][bundle]['plugins'][plugin_id]['contexts'][context]['parameters']
         for key in params:
             param_string = params[key]['ctypes'].brief_details()
             if param_string is not None:
                 print(param_string)
-        print('\nClips\n=====\n')
-        clips = self._host['plugins'][plugin_id]['contexts']['OfxImageEffectContextFilter']['clips']
-        for c in clips:
-            clip_string = clips[c]['ctypes'].brief_details()
+        print()
+        print('Clips')
+        print('=====\n')
+        clips = self._host['bundles'][bundle]['plugins'][plugin_id]['contexts'][context]['clips']
+        for key in clips:
+            clip_string = clips[key]['ctypes'].brief_details()
             if clip_string is not None:
                 print(clip_string)
 
+        print('\n')
         return OFX_STATUS_OK
 
-    def save_plugin_parameters(self, plugin_id, json_filename):
-        params = self._host['plugins'][plugin_id]['contexts']['OfxImageEffectContextFilter']['parameters']
+    def save_plugin_parameters(self, bundle, plugin_id, json_filename, context='OfxImageEffectContextFilter'):
+        params = self._host['bundles'][bundle]['plugins'][plugin_id]['contexts'][context]['parameters']
         active_params = {}
         for key in params:
             p = params[key]['ctypes'].as_tuple()
@@ -104,8 +115,8 @@ class ofx_host():
 
         return OFX_STATUS_OK
 
-    def load_plugin_parameters(self, instance_id, json_filename):
-        current_params = self._host['active_plugins'][instance_id]['parameters']
+    def load_plugin_parameters(self, active_uid, json_filename):
+        current_params = self._host['active']['plugins'][active_uid]['parameters']
 
         with open(json_filename, 'r') as fp:
             update_params = json.load(fp)
@@ -154,9 +165,12 @@ class ofx_host():
  
         plugin_lib = ctypes.CDLL(filename)
         plugin_count = plugin_lib.OfxGetNumberOfPlugins()
-        self._host['libs'].append({'cdll': plugin_lib,
-                                   'filename': filename,
-                                   'plugins_count': plugin_count})
+        self._host['bundles'][bundle] = {
+            'cdll':          plugin_lib,
+            'filename':      filename,
+            'plugins_count': plugin_count,
+            'plugins':       {}
+        }
 
         get_plugin = plugin_lib.OfxGetPlugin
         get_plugin.restype = ctypes.c_void_p
@@ -167,137 +181,210 @@ class ofx_host():
             set_host_func(self._host['hostStruct'])
 
             plugin_id = plugin_info.pluginIdentifier.decode("utf-8")
-            effect_handle = CStructOfxHandle(ctypes.c_char_p(b"OfxTypeImageEffect"),
-                                             ctypes.c_char_p(plugin_id.encode('utf-8')))
+            effect_handle = CStructOfxHandle(
+                ctypes.c_char_p(b"OfxTypeImageEffect"),
+                ctypes.c_char_p(bundle.encode('utf-8')),
+                ctypes.c_char_p(plugin_id.encode('utf-8')),
+                ctypes.c_char_p(b''),
+                ctypes.c_char_p(b''),
+                ctypes.c_char_p(plugin_id.encode('utf-8'))
+            )
 
-            self._host['plugins'][plugin_id] = {'handle':             effect_handle,
-                                                'pluginApi':          plugin_info.pluginApi.decode("utf-8"),
-                                                'apiVersion':         plugin_info.apiVersion,
-                                                'pluginVersionMajor': plugin_info.pluginVersionMajor,
-                                                'pluginVersionMinor': plugin_info.pluginVersionMinor,
-                                                'setHost':            plugin_info.setHost,
-                                                'mainEntry':          plugin_info.mainEntry,
-                                                'contexts':           {},
-                                                'ctypes':             OfxEffectProperties(plugin_id)}
+            self._host['bundles'][bundle]['plugins'][plugin_id] = {
+                'handle':             effect_handle,
+                'pluginApi':          plugin_info.pluginApi.decode("utf-8"),
+                'apiVersion':         plugin_info.apiVersion,
+                'pluginVersionMajor': plugin_info.pluginVersionMajor,
+                'pluginVersionMinor': plugin_info.pluginVersionMinor,
+                'setHost':            plugin_info.setHost,
+                'mainEntry':          plugin_info.mainEntry,
+                'contexts':           {},
+                'ctypes':             OfxEffectProperties(plugin_id)
+            }
 
         return OFX_STATUS_OK
 
-    def _add_active_plugin(self, plugin_id, context, width, height):
-        active_id = 'fx_{:05d}'.format(len(self._host['active_plugins']))
+    def _add_active_plugin(self, bundle_id, plugin_id, context, width, height):
+        active_uid = str(uuid.uuid1())
 
-        effect_handle = CStructOfxHandle(ctypes.c_char_p(b'OfxTypeImageEffectInstance'),
-                                         ctypes.c_char_p(active_id.encode('utf-8')))
+        effect_handle = CStructOfxHandle(
+            ctypes.c_char_p(b'OfxTypeImageEffectInstance'),
+            ctypes.c_char_p(bundle_id.encode('utf-8')),
+            ctypes.c_char_p(plugin_id.encode('utf-8')),
+            ctypes.c_char_p(context.encode('utf-8')),
+            ctypes.c_char_p(active_uid.encode('utf-8')),
+            ctypes.c_char_p(active_uid.encode('utf-8'))
+        )
 
         clips = {}
         parameters = {}
+        plugin = self._host['bundles'][bundle_id]['plugins'][plugin_id]
 
-        for key in self._host['plugins'][plugin_id]['contexts'][context]['clips']:
-            descriptor = self._host['plugins'][plugin_id]['contexts'][context]['clips'][key]
-            clips[key] = self._image_effect_suite.create_clip_instance(descriptor, active_id)
+        for key in plugin['contexts'][context]['clips']:
+            descriptor = plugin['contexts'][context]['clips'][key]
+            clips[key] = self._image_effect_suite.create_clip_instance(descriptor, active_uid)
             clips[key]['ctypes'].add_instance_properties()
 
-        for key in self._host['plugins'][plugin_id]['contexts'][context]['parameters']:
-            descriptor = self._host['plugins'][plugin_id]['contexts'][context]['parameters'][key]
-            parameters[key] = self._parameter_suite.create_parameter_instance(descriptor, active_id)
+        for key in plugin['contexts'][context]['parameters']:
+            descriptor = plugin['contexts'][context]['parameters'][key]
+            parameters[key] = self._parameter_suite.create_parameter_instance(descriptor, active_uid)
 
-        active_plugin = {'handle':     effect_handle,
-                         'plugin':     plugin_id,
-                         'context':    context,
-                         'clips':      clips,
-                         'parameters': parameters,
-                         'ctypes':     OfxEffectInstanceProperties(context, width, height)}
+        active_plugin = {
+            'handle':     effect_handle,
+            'mainEntry':  plugin['mainEntry'],
+            'plugin':     plugin_id,
+            'context':    context,
+            'clips':      clips,
+            'parameters': parameters,
+            'render':     {'sequence': None, 'action':None},
+            'ctypes':     OfxEffectInstanceProperties(context, width, height)
+        }
 
-        self._host['active_plugins'][active_id] = active_plugin
-        return active_id
+        self._host['active']['plugins'][active_uid] = active_plugin
+        return active_uid
 
-    def plugin_load_and_describe(self, plugin_id):
-        plugin = self._host['plugins'][plugin_id]
+    def plugin_load_and_describe(self, bundle, plugin_id):
+        plugin = self._host['bundles'][bundle]['plugins'][plugin_id]
+
         entry_point = cfunc_plugin_entry_point(plugin['mainEntry'])
 
-        entry_point(ctypes.c_char_p(b'OfxActionLoad'),
-                    0,
-                    0,
-                    0)
+        entry_point(
+            ctypes.c_char_p(b'OfxActionLoad'),
+            0,
+            0,
+            0
+        )
 
-        entry_point(ctypes.c_char_p(b'OfxActionDescribe'),
-                    ctypes.pointer(plugin['handle']),
-                    0,
-                    0)
+        entry_point(
+            ctypes.c_char_p(b'OfxActionDescribe'),
+            ctypes.pointer(plugin['handle']),
+            0,
+            0
+        )
 
         for context in self._host['ctypes'].get('OfxImageEffectPropSupportedContexts'):
             context_string = ctypes.cast(context, ctypes.c_char_p).value.decode('utf-8')
-            plugin_contexts = [ctypes.cast(i, ctypes.c_char_p).value.decode('utf-8')
-                               for i in plugin['ctypes'].get('OfxImageEffectPropSupportedContexts')]
+            plugin_contexts = [
+                ctypes.cast(i, ctypes.c_char_p).value.decode('utf-8')
+                for i in plugin['ctypes'].get('OfxImageEffectPropSupportedContexts')
+            ]
 
             if context_string in plugin_contexts:
                 context_id = '{}.{}'.format(plugin_id, context_string)
 
-                context_handle = CStructOfxHandle(ctypes.c_char_p(b'OfxImageEffectPropContext'),
-                                                  ctypes.c_char_p(context_id.encode('utf-8')))
+                context_handle = CStructOfxHandle(
+                    ctypes.c_char_p(b'OfxImageEffectPropContext'),
+                    plugin['handle'].bundle,
+                    plugin['handle'].plugin,
+                    ctypes.c_char_p(context_string.encode('utf-8')),
+                    ctypes.c_char_p(b''),
+                    ctypes.c_char_p(context_string.encode('utf-8'))
+                )
 
-                context_descriptor = {'handle':           context_handle,
-                                      'clips':            {},
-                                      'parameters':       {},
-                                      'pluginIdentifier': plugin_id,
-                                      'ctypes':           OfxEffectContextProperties(context_string)}
+                context_descriptor = {
+                    'handle':           context_handle,
+                    'clips':            {},
+                    'parameters':       {},
+                    'pluginIdentifier': plugin_id,
+                    'ctypes':           OfxEffectContextProperties(context_string)
+                }
 
                 plugin['contexts'][context_string] = context_descriptor
 
-                entry_point(ctypes.c_char_p(b'OfxImageEffectActionDescribeInContext'),
-                            ctypes.pointer(context_handle),
-                            ctypes.pointer(context_handle),
-                            0)
+                entry_point(
+                    ctypes.c_char_p(b'OfxImageEffectActionDescribeInContext'),
+                    ctypes.pointer(context_handle),
+                    ctypes.pointer(context_handle),
+                    0
+                )
 
         return OFX_STATUS_OK
 
-    def create_plugin_instance(self, plugin_id, width, height):
-        plugin = self._host['plugins'][plugin_id]
+    def create_plugin_instance(self, bundle, plugin_id, width, height):
+        plugin = self._host['bundles'][bundle]['plugins'][plugin_id]
         entry_point = cfunc_plugin_entry_point(plugin['mainEntry'])
 
-        active_id = self._add_active_plugin(plugin_id, 'OfxImageEffectContextFilter', width, height)
+        active_uid = self._add_active_plugin(bundle, plugin_id, 'OfxImageEffectContextFilter', width, height)
 
-        entry_point(ctypes.c_char_p(b'OfxActionCreateInstance'),
-                    ctypes.pointer(self._host['active_plugins'][active_id]['handle']),
-                    0,
-                    0)
+        entry_point(
+            ctypes.c_char_p(b'OfxActionCreateInstance'),
+            ctypes.pointer(self._host['active']['plugins'][active_uid]['handle']),
+            0,
+            0
+        )
 
-        return(active_id, OFX_STATUS_OK)
+        return(active_uid, OFX_STATUS_OK)
 
-    def load_image(self, filename, width, height):
+    def connect_image(self, active_uid, clip_name, filename, width, height):
         im_frame = ImageOps.flip(Image.open(filename))
         im_frame = im_frame.convert('RGBA')
         im_frame = im_frame.resize((width, height), Image.ANTIALIAS)
         np_frame = np.ascontiguousarray(np.array(im_frame.getdata()), dtype=np.uint8)
         frame_ptr = np_frame.ctypes.data_as(ctypes.c_void_p).value
 
-        image_handle = CStructOfxHandle(ctypes.c_char_p(b'OfxImage'),
-                                        ctypes.c_char_p(b'Source'))
+        image_handle = CStructOfxHandle(
+            ctypes.c_char_p(b'OfxImage'),
+            self._host['active']['plugins'][active_uid]['handle'].bundle,
+            self._host['active']['plugins'][active_uid]['handle'].plugin,
+            self._host['active']['plugins'][active_uid]['handle'].context,
+            self._host['active']['plugins'][active_uid]['handle'].active_uid,
+            ctypes.c_char_p(clip_name.encode('utf-8'))
+        )
 
-        image_props = {'handle':      image_handle,
-                       'numpy_array': np_frame,
-                       'ctypes':      OfxImageProperties('source', frame_ptr, width, height)}
+        image_props = {
+            'handle':      image_handle,
+            'numpy_array': np_frame,
+            'ctypes':      OfxImageProperties('source', frame_ptr, width, height)
+        }
 
-        self._host['images']['Source'] = image_props
+        clip = self._host['active']['plugins'][active_uid]['clips'][clip_name]
+        clip['image'] = image_props
+        clip['ctypes'].update('OfxImageClipPropConnected', 1, 'int')
 
         return  OFX_STATUS_OK
 
-    def create_output_buffer(self, width, height):
-        out_frame = np.ascontiguousarray(np.zeros(width*height*4, np.uint8), dtype=np.uint8)
-        out_frame_ptr = out_frame.ctypes.data_as(ctypes.c_void_p).value
+    def connect_buffer(self, active_uid, clip_name, width, height):
+        buffer = np.ascontiguousarray(np.zeros(width*height*4, np.uint8), dtype=np.uint8)
+        buffer_ptr = buffer.ctypes.data_as(ctypes.c_void_p).value
 
-        out_image_handle = CStructOfxHandle(ctypes.c_char_p(b'OfxImage'),
-                                            ctypes.c_char_p(b'Output'))
+        buffer_handle = CStructOfxHandle(
+            ctypes.c_char_p(b'OfxImage'),
+            self._host['active']['plugins'][active_uid]['handle'].bundle,
+            self._host['active']['plugins'][active_uid]['handle'].plugin,
+            self._host['active']['plugins'][active_uid]['handle'].context,
+            self._host['active']['plugins'][active_uid]['handle'].active_uid,
+            ctypes.c_char_p(clip_name.encode('utf-8'))
+        )
 
-        out_image_props = {'handle':      out_image_handle,
-                           'numpy_array': out_frame,
-                           'ctypes':      OfxImageProperties('output', out_frame_ptr, width, height)}
+        buffer_props = {
+            'handle':      buffer_handle,
+            'numpy_array': buffer,
+            'ctypes':      OfxImageProperties('output', buffer_ptr, width, height)
+        }
 
-        self._host['images']['Output'] = out_image_props
+        clip = self._host['active']['plugins'][active_uid]['clips'][clip_name]
+        clip['image'] = buffer_props
+        clip['ctypes'].update('OfxImageClipPropConnected', 1, 'int')
 
         return OFX_STATUS_OK
 
-    def save_output_buffer(self, filename, width, height):
-        ptr = self._host['images']['Output']['ctypes'].get('OfxImagePropData').value
+    def disconnect_image(self, active_uid, clip_name):
+        clip = self._host['active']['plugins'][active_uid]['clips'][clip_name]
+        clip['image'] = {}
+        clip['ctypes'].update('OfxImageClipPropConnected', 0, 'int')
+
+        return  OFX_STATUS_OK
+
+    def disconnect_buffer(self, active_uid, clip_name):
+        return self.disconnect_image(active_uid, clip_name)
+
+    def save_image(self, active_uid, clip_name, filename, width, height):
+        clip = self._host['active']['plugins'][active_uid]['clips'][clip_name]
+
+        if clip['ctypes'].get('OfxImageClipPropConnected').value == 0:
+            return OFX_STATUS_FAILED
+
+        ptr = clip['image']['ctypes'].get('OfxImagePropData').value
         np_array = np.ctypeslib.as_array(ctypes.cast(ptr, ctypes.POINTER(ctypes.c_ubyte)), (height,width,4))
         im = ImageOps.flip(Image.fromarray(np_array))
         if filename.rsplit('.', 1)[1].lower() in ['jpg']:
@@ -306,76 +393,110 @@ class ofx_host():
 
         return OFX_STATUS_OK
 
-    def render(self, plugin_id, active_id, in_filename, out_filename, width, height):
-        plugin = self._host['plugins'][plugin_id]
+    def begin_render_sequence(self, active_uid):
+        plugin = self._host['active']['plugins'][active_uid]
+
         entry_point = cfunc_plugin_entry_point(plugin['mainEntry'])
 
-        self.create_output_buffer(width, height)
+        sequence_render_handle = CStructOfxHandle(
+            ctypes.c_char_p(b'OfxSequenceRenderAction'),
+            self._host['active']['plugins'][active_uid]['handle'].bundle,
+            self._host['active']['plugins'][active_uid]['handle'].plugin,
+            self._host['active']['plugins'][active_uid]['handle'].context,
+            self._host['active']['plugins'][active_uid]['handle'].active_uid,
+            ctypes.c_char_p(b'render_sequence')
+        )
 
-        sequence_render_handle = CStructOfxHandle(ctypes.c_char_p(b'OfxSequenceRenderAction'),
-                                                  ctypes.c_char_p(active_id.encode('utf-8')))
+        sequence_render_props = {
+            'handle': sequence_render_handle,
+            'ctypes': OfxSequenceRenderActionProperties()
+        }
 
-        sequence_render_props = {'handle': sequence_render_handle,
-                                 'ctypes': OfxSequenceRenderActionProperties()}
+        plugin['render']['sequence'] = sequence_render_props
 
-        self._host['render_sequences'][active_id] = sequence_render_props
-
-        render_handle = CStructOfxHandle(ctypes.c_char_p(b'OfxRenderAction'),
-                                         ctypes.c_char_p(active_id.encode('utf-8')))
-
-        render_props = {'handle': render_handle,
-                        'ctypes': OfxRenderActionProperties(width, height)}
-
-        self._host['render_actions'][active_id] = render_props
-
-        entry_point(ctypes.c_char_p(b'OfxImageEffectActionBeginSequenceRender'),
-                    ctypes.pointer(self._host['active_plugins'][active_id]['handle']),
-                    ctypes.pointer(sequence_render_handle),
-                    0)
-
-        self.load_image(in_filename, width, height)
-
-        entry_point(ctypes.c_char_p(b'OfxImageEffectActionRender'),
-                    ctypes.pointer(self._host['active_plugins'][active_id]['handle']),
-                    ctypes.pointer(render_handle),
-                    0)
-
-        self.save_output_buffer(out_filename, width, height)
-        # delete source buffer
-
-        entry_point(ctypes.c_char_p(b'OfxImageEffectActionEndSequenceRender'),
-                    ctypes.pointer(self._host['active_plugins'][active_id]['handle']),
-                    ctypes.pointer(sequence_render_handle),
-                    0)
-
-        # delete render handle
-        # delete sequence render handle
-        # delete output buffer
+        entry_point(
+            ctypes.c_char_p(b'OfxImageEffectActionBeginSequenceRender'),
+            ctypes.pointer(plugin['handle']),
+            ctypes.pointer(sequence_render_handle),
+            0
+        )
 
         return OFX_STATUS_OK
 
-    def destroy_plugin_instance(self, plugin_id, active_id):
-        plugin = self._host['plugins'][plugin_id]
+    def render(self, active_uid, width, height):
+        plugin = self._host['active']['plugins'][active_uid]
+
         entry_point = cfunc_plugin_entry_point(plugin['mainEntry'])
 
-        entry_point(ctypes.c_char_p(b'OfxActionDestroyInstance'),
-                    ctypes.pointer(self._host['active_plugins'][active_id]['handle']),
-                    0,
-                    0)
+        render_handle = CStructOfxHandle(
+            ctypes.c_char_p(b'OfxRenderAction'),
+            self._host['active']['plugins'][active_uid]['handle'].bundle,
+            self._host['active']['plugins'][active_uid]['handle'].plugin,
+            self._host['active']['plugins'][active_uid]['handle'].context,
+            self._host['active']['plugins'][active_uid]['handle'].active_uid,
+            ctypes.c_char_p(b'render_action')
+        )
 
-        # delete plugin instance
+        render_props = {
+            'handle': render_handle,
+            'ctypes': OfxRenderActionProperties(width, height)
+        }
+
+        plugin['render']['action'] = render_props
+
+        entry_point(
+            ctypes.c_char_p(b'OfxImageEffectActionRender'),
+            ctypes.pointer(self._host['active']['plugins'][active_uid]['handle']),
+            ctypes.pointer(render_handle),
+            0
+        )
+
+        plugin['render']['action'] = None
 
         return OFX_STATUS_OK
 
-    def unload_plugin(self, plugin_id):
-        plugin = self._host['plugins'][plugin_id]
+    def end_render_sequence(self, active_uid):
+        plugin = self._host['active']['plugins'][active_uid]
+
         entry_point = cfunc_plugin_entry_point(plugin['mainEntry'])
 
-        entry_point(ctypes.c_char_p(b'OfxActionUnload'),
-                    0,
-                    0,
-                    0)
+        entry_point(
+            ctypes.c_char_p(b'OfxImageEffectActionEndSequenceRender'),
+            ctypes.pointer(plugin['handle']),
+            ctypes.pointer(plugin['render']['sequence']['handle']),
+            0
+        )
 
+        plugin['render']['sequence'] = None
+
+        return OFX_STATUS_OK
+
+    def destroy_plugin_instance(self, active_uid):
+        plugin = self._host['active']['plugins'][active_uid]
+
+        entry_point = cfunc_plugin_entry_point(plugin['mainEntry'])
+
+        entry_point(
+            ctypes.c_char_p(b'OfxActionDestroyInstance'),
+            ctypes.pointer(self._host['active']['plugins'][active_uid]['handle']),
+            0,
+            0
+        )
+
+        del(self._host['active']['plugins'][active_uid])
+
+        return OFX_STATUS_OK
+
+    def unload_plugin(self, bundle, plugin_id):
+        plugin = self._host['bundles'][bundle]['plugins'][plugin_id]
+        entry_point = cfunc_plugin_entry_point(plugin['mainEntry'])
+
+        entry_point(
+            ctypes.c_char_p(b'OfxActionUnload'),
+            0,
+            0,
+            0
+        )
 
         return OFX_STATUS_OK
 

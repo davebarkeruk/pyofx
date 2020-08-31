@@ -8,7 +8,6 @@
 
 import ctypes
 import copy
-import uuid
 from ofx_ctypes import *
 from ofx_property_sets import *
 from ofx_status_codes import *
@@ -31,40 +30,42 @@ class OfxImageEffectSuite():
         self._image_memory_lock =             cfunc_image_memory_lock(self._image_memory_lock_callback)
         self._image_memory_unlock =           cfunc_image_memory_unlock(self._image_memory_unlock_callback)
 
-        self._suite = CStructOfxImageEffectSuite(self._get_property_set,
-                                                 self._get_param_set,
-                                                 self._clip_define,
-                                                 self._clip_get_handle,
-                                                 self._clip_get_property_set,
-                                                 self._clip_get_image,
-                                                 self._clip_release_image,
-                                                 self._clip_get_region_of_definition,
-                                                 self._abort,
-                                                 self._image_memory_alloc,
-                                                 self._image_memory_free,
-                                                 self._image_memory_lock,
-                                                 self._image_memory_unlock)
+        self._suite = CStructOfxImageEffectSuite(
+            self._get_property_set,
+            self._get_param_set,
+            self._clip_define,
+            self._clip_get_handle,
+            self._clip_get_property_set,
+            self._clip_get_image,
+            self._clip_release_image,
+            self._clip_get_region_of_definition,
+            self._abort,
+            self._image_memory_alloc,
+            self._image_memory_free,
+            self._image_memory_lock,
+            self._image_memory_unlock
+        )
 
     def get_pointer_as_int(self):
         return ctypes.cast(ctypes.pointer(self._suite), ctypes.c_void_p).value
 
-    def create_clip_instance(self, clip_descriptor, instance_id):
-        descriptor_id = clip_descriptor['handle'].id.decode("utf-8")
-        descriptor_name = descriptor_id.rsplit('.', 1)[1]
-        instance_clip_id = '%s.%s'%(instance_id, descriptor_name)
+    def create_clip_instance(self, clip_descriptor, active_uid):
+        handle = clip_descriptor['handle']
 
-        clip_handle = CStructOfxHandle("OfxTypeClip".encode('utf-8'),
-                                                  instance_clip_id.encode('utf-8'))
+        clip_handle = CStructOfxHandle(
+            ctypes.c_char_p(b'OfxTypeClipInstance'),
+            handle.bundle,
+            handle.plugin,
+            handle.context,
+            ctypes.c_char_p(active_uid.encode("utf-8")),
+            handle.name
+        )
 
-        return {'handle': clip_handle,
-                'ctypes': copy.deepcopy(clip_descriptor['ctypes']) }
-
-    def _decode_handle(self, ctype_handle):
-        handle_structure = CStructOfxHandle.from_address(ctype_handle)
-        handle_type = handle_structure.property_type.decode("utf-8")
-        handle_id = handle_structure.id.decode("utf-8")
-
-        return(handle_type, handle_id)
+        return {
+            'handle': clip_handle,
+            'image' : None,
+            'ctypes': copy.deepcopy(clip_descriptor['ctypes'])
+        }
 
     def _get_property_set_callback(self, ctype_image_effect_handle, ctype_property_handle):
         ctype_property_handle.contents.value = ctype_image_effect_handle
@@ -77,33 +78,37 @@ class OfxImageEffectSuite():
         return OFX_STATUS_OK
 
     def _clip_define_callback(self, ctype_image_effect_handle, ctype_name, ctype_property_handle):
-        property_set = CStructOfxHandle.from_address(ctype_image_effect_handle)
-        property_type = property_set.property_type.decode("utf-8")
-        property_id = property_set.id.decode("utf-8")
-        plugin_id = property_id.rsplit('.', 1)[0]
-        context_id = property_id.rsplit('.', 1)[1]
+        handle = CStructOfxHandle.from_address(ctype_image_effect_handle)
+
+        clip_handle = CStructOfxHandle(
+            ctypes.c_char_p(b'OfxTypeClip'),
+            handle.bundle,
+            handle.plugin,
+            handle.context,
+            handle.active_uid,
+            ctype_name
+        )
+
+        bundle = handle.bundle.decode("utf-8")
+        plugin = handle.plugin.decode("utf-8")
+        context = handle.context.decode("utf-8")
         name = ctype_name.decode("utf-8")
-        clip_id = "%s.%s"%(property_id, name)
 
-        clip_handle = CStructOfxHandle("OfxTypeClip".encode('utf-8'),
-                                       clip_id.encode('utf-8'))
-
-        self._host['plugins'][plugin_id]['contexts'][context_id]['clips'][name] = {
+        self._host['bundles'][bundle]['plugins'][plugin]['contexts'][context]['clips'][name] = {
             'handle': clip_handle,
             'ctypes': OfxClipProperties(clip_name=name)
-            }
+        }
 
         ctype_property_handle.contents.value = ctypes.cast(ctypes.pointer(clip_handle), ctypes.c_void_p).value
 
         return OFX_STATUS_OK
 
     def _clip_get_handle_callback(self, ctype_image_effect_handle, ctype_name, ctype_clip_handle, ctype_property_handle):
-        image_effect_set = CStructOfxHandle.from_address(ctype_image_effect_handle)
-        image_effect_type = image_effect_set.property_type.decode("utf-8")
-        image_effect_id = image_effect_set.id.decode("utf-8")
-        clip_name = ctype_name.decode("utf-8")
+        handle = CStructOfxHandle.from_address(ctype_image_effect_handle)
+        active_uid = handle.active_uid.decode("utf-8")
+        name = ctype_name.decode("utf-8")
 
-        clip_handle = self._host['active_plugins'][image_effect_id]['clips'][clip_name]['handle']
+        clip_handle = self._host['active']['plugins'][active_uid]['clips'][name]['handle']
 
         ctype_clip_handle.contents.value = ctypes.cast(ctypes.pointer(clip_handle), ctypes.c_void_p).value
 
@@ -118,13 +123,16 @@ class OfxImageEffectSuite():
         return OFX_STATUS_OK
 
     def _clip_get_image_callback(self, ctype_clip_handle, ctype_time, ctype_region, ctype_image_handle):
-        clip_set = CStructOfxHandle.from_address(ctype_clip_handle)
-        clip_type = clip_set.property_type.decode("utf-8")
-        clip_id = clip_set.id.decode("utf-8")
-        active_id = clip_id.rsplit('.', 1)[0]
-        clip_name = clip_id.rsplit('.', 1)[1]
+        handle = CStructOfxHandle.from_address(ctype_clip_handle)
+        active_uid = handle.active_uid.decode("utf-8")
+        name = handle.name.decode("utf-8")
 
-        image_handle = self._host['images'][clip_name]['handle']
+        clip = self._host['active']['plugins'][active_uid]['clips'][name]
+
+        if clip['ctypes'].get('OfxImageClipPropConnected').value == 0:
+            return OFX_STATUS_FAILED
+
+        image_handle = clip['image']['handle']
 
         ctype_image_handle.contents.value = ctypes.cast(ctypes.pointer(image_handle), ctypes.c_void_p).value
 
@@ -140,54 +148,69 @@ class OfxImageEffectSuite():
         return OFX_STATUS_OK
 
     def _image_memory_alloc_callback(self, ctype_instance_handle, ctype_n_bytes, ctype_memory_handle):
-        # ignoring the ctype_instance_handle as it often NULL
+        buffer = (ctypes.c_byte * ctype_n_bytes)()
+        pointer = ctypes.addressof(buffer)
 
-        memory_buffer = (ctypes.c_byte * ctype_n_bytes)()
-        memory_id = str(uuid.uuid1())
-        memory_handle = CStructOfxHandle("OfxImageMemoryHandle".encode('utf-8'),
-                                         memory_id.encode('utf-8'))
+        if ctype_instance_handle:
+            handle = CStructOfxHandle.from_address(ctype_image_effect_handle)
 
-        self._host['memory'][memory_id] = {
-            'handle': memory_handle,
-            'buffer': memory_buffer,
+            memory_handle = CStructOfxHandle(
+                ctypes.c_char_p(b'OfxImageMemoryHandle'),
+                handle.bundle,
+                handle.plugin,
+                handle.context,
+                handle.active_uid,
+                str(pointer).encode('utf-8')
+            )
+        else:
+            memory_handle = CStructOfxHandle(
+                ctypes.c_char_p(b'OfxImageMemoryHandle'),
+                ctypes.c_char_p(b''),
+                ctypes.c_char_p(b''),
+                ctypes.c_char_p(b''),
+                ctypes.c_char_p(b''),
+                ctypes.c_char_p(str(pointer).encode('utf-8'))
+            )
+
+        self._host['active']['memory'][str(pointer)] = {
+            'handle':     memory_handle,
+            'buffer':     buffer,
             'lock_count': 0,
-            'pointer': ctypes.addressof(memory_buffer),
-            'size': ctype_n_bytes
-            }
+            'pointer':    pointer,
+            'size':       ctype_n_bytes
+        }
 
         ctype_memory_handle.contents.value = ctypes.cast(ctypes.pointer(memory_handle), ctypes.c_void_p).value
 
         return OFX_STATUS_OK
 
     def _image_memory_lock_callback(self, ctype_memory_handle, ctype_return_ptr):
-        property_set = CStructOfxHandle.from_address(ctype_memory_handle)
-        property_type = property_set.property_type.decode("utf-8")
-        property_id = property_set.id.decode("utf-8")
+        handle = CStructOfxHandle.from_address(ctype_memory_handle)
+        name = handle.name.decode('utf-8')
 
-        ctype_return_ptr.contents.value = self._host['memory'][property_id]['pointer']
-        self._host['memory'][property_id]['lock_count'] += 1
+        ctype_return_ptr.contents.value = self._host['active']['memory'][name]['pointer']
+        self._host['active']['memory'][name]['lock_count'] += 1
 
         return OFX_STATUS_OK
 
     def _image_memory_free_callback(self, ctype_memory_handle):
-        property_set = CStructOfxHandle.from_address(ctype_memory_handle)
-        property_type = property_set.property_type.decode("utf-8")
-        property_id = property_set.id.decode("utf-8")
+        handle = CStructOfxHandle.from_address(ctype_memory_handle)
+        name = handle.name.decode('utf-8')
 
-        if self._host['memory'][property_id]['lock_count'] < 1:
-            del(self._host['memory'][property_id])
+        if self._host['active']['memory'][name]['lock_count'] < 1:
+            del(self._host['active']['memory'][name])
         else:
             print('WARNING: Trying to delete imageMemory that is still locked')
+            return OFX_STATUS_FAILED
 
         return OFX_STATUS_OK
 
     def _image_memory_unlock_callback(self, ctype_memory_handle):
-        property_set = CStructOfxHandle.from_address(ctype_memory_handle)
-        property_type = property_set.property_type.decode("utf-8")
-        property_id = property_set.id.decode("utf-8")
+        handle = CStructOfxHandle.from_address(ctype_memory_handle)
+        name = handle.name.decode('utf-8')
 
-        if self._host['memory'][property_id]['lock_count'] > 0:
-            self._host['memory'][property_id]['lock_count'] -= 1
+        if self._host['active']['memory'][name]['lock_count'] > 0:
+            self._host['active']['memory'][name]['lock_count'] -= 1
 
         return OFX_STATUS_OK
 

@@ -34,98 +34,93 @@ class OfxPropertySuite():
         self._prop_reset =         cfunc_prop_reset(self._prop_reset_callback)
         self._prop_get_dimension = cfunc_prop_get_dimension(self._prop_get_dimension_callback)
 
-        self._suite = CStructOfxPropertySuite(self._prop_set_pointer,
-                                              self._prop_set_string,
-                                              self._prop_set_double,
-                                              self._prop_set_int,
-                                              self._prop_set_pointer_n,
-                                              self._prop_set_string_n,
-                                              self._prop_set_double_n,
-                                              self._prop_set_int_n,
-                                              self._prop_get_pointer,
-                                              self._prop_get_string,
-                                              self._prop_get_double,
-                                              self._prop_get_int,
-                                              self._prop_get_pointer_n,
-                                              self._prop_get_string_n,
-                                              self._prop_get_double_n,
-                                              self._prop_get_int_n,
-                                              self._prop_reset,
-                                              self._prop_get_dimension)
+        self._suite = CStructOfxPropertySuite(
+            self._prop_set_pointer,
+            self._prop_set_string,
+            self._prop_set_double,
+            self._prop_set_int,
+            self._prop_set_pointer_n,
+            self._prop_set_string_n,
+            self._prop_set_double_n,
+            self._prop_set_int_n,
+            self._prop_get_pointer,
+            self._prop_get_string,
+            self._prop_get_double,
+            self._prop_get_int,
+            self._prop_get_pointer_n,
+            self._prop_get_string_n,
+            self._prop_get_double_n,
+            self._prop_get_int_n,
+            self._prop_reset,
+            self._prop_get_dimension
+        )
 
     def get_pointer_as_int(self):
         return ctypes.cast(ctypes.pointer(self._suite), ctypes.c_void_p).value
 
-    def _decode_handle(self, ctype_handle):
-        handle_structure = CStructOfxHandle.from_address(ctype_handle)
-        handle_type = handle_structure.property_type.decode("utf-8")
-        handle_id = handle_structure.id.decode("utf-8")
-
-        return(handle_type, handle_id)
+    def _get_handle_type(self, ctype_handle):
+        handle = CStructOfxHandle.from_address(ctype_handle)
+        return handle.property_type.decode("utf-8")
 
     def _get_property_object(self, ctype_handle):
-        (property_type, property_id) = self._decode_handle(ctype_handle)
-
-        regex_pattern = re.compile('fx\_\d\d\d\d\d\.')
-        active_property_set = regex_pattern.match(property_id) is not None
+        handle = CStructOfxHandle.from_address(ctype_handle)
+        property_type = handle.property_type.decode("utf-8")
+        bundle = handle.bundle.decode("utf-8")
+        plugin = handle.plugin.decode("utf-8")
+        context = handle.context.decode("utf-8")
+        active_uid = handle.active_uid.decode("utf-8")
+        name = handle.name.decode("utf-8")
 
         if property_type == 'OfxTypeImageEffectHost':
             return self._host['ctypes']
 
-        if property_type == 'OfxImageEffectPropContext':
-            plugin_id = property_id.rsplit('.', 1)[0]
-            context_id = property_id.rsplit('.', 1)[1]
-            if (plugin_id in self._host['plugins'] and
-                context_id in self._host['plugins'][plugin_id]['contexts']):
-                return self._host['plugins'][plugin_id]['contexts'][context_id]['ctypes']
-
         if property_type == 'OfxTypeImageEffect':
-            if property_id in self._host['plugins']:
-                return self._host['plugins'][property_id]['ctypes']
+            if plugin in self._host['bundles'][bundle]['plugins']:
+                return self._host['bundles'][bundle]['plugins'][plugin]['ctypes']
 
-        if property_type == 'OfxTypeImageEffectInstance':
-            if property_id in self._host['active_plugins']:
-                return self._host['active_plugins'][property_id]['ctypes']
+        if property_type == 'OfxImageEffectPropContext':
+            if plugin in self._host['bundles'][bundle]['plugins']:
+                if context in self._host['bundles'][bundle]['plugins'][plugin]['contexts']:
+                    return self._host['bundles'][bundle]['plugins'][plugin]['contexts'][context]['ctypes']
 
-        if property_type == 'OfxTypeClip' and active_property_set:
-            active_id = property_id.rsplit('.', 1)[0]
-            clip_id = property_id.rsplit('.', 1)[1]
-            if (active_id in self._host['active_plugins'] and
-                clip_id in self._host['active_plugins'][active_id]['clips']):
-                return self._host['active_plugins'][active_id]['clips'][clip_id]['ctypes']
-        elif property_type == 'OfxTypeClip':
-            plugin_id = property_id.rsplit('.', 2)[0]
-            context_id = property_id.rsplit('.', 2)[1]
-            clip_id = property_id.rsplit('.', 2)[2]
-            if (plugin_id in self._host['plugins'] and
-                context_id in self._host['plugins'][plugin_id]['contexts'] and
-                clip_id in self._host['plugins'][plugin_id]['contexts'][context_id]['clips']):
-                return self._host['plugins'][plugin_id]['contexts'][context_id]['clips'][clip_id]['ctypes']
+        if property_type == 'OfxTypeClip':
+            if plugin in self._host['bundles'][bundle]['plugins']:
+                if context in self._host['bundles'][bundle]['plugins'][plugin]['contexts']:
+                    if name in self._host['bundles'][bundle]['plugins'][plugin]['contexts'][context]['clips']:
+                        return self._host['bundles'][bundle]['plugins'][plugin]['contexts'][context]['clips'][name]['ctypes']
 
         if property_type == 'OfxTypeParameter':
-            plugin_id = property_id.rsplit('.', 2)[0]
-            context_id = property_id.rsplit('.', 2)[1]
-            param_id = property_id.rsplit('.', 2)[2]
-            if (plugin_id in self._host['plugins'] and
-                context_id in self._host['plugins'][plugin_id]['contexts'] and
-                param_id in self._host['plugins'][plugin_id]['contexts'][context_id]['parameters']):
-                return self._host['plugins'][plugin_id]['contexts'][context_id]['parameters'][param_id]['ctypes']
+            if plugin in self._host['bundles'][bundle]['plugins']:
+                if context in self._host['bundles'][bundle]['plugins'][plugin]['contexts']:
+                    if name in self._host['bundles'][bundle]['plugins'][plugin]['contexts'][context]['parameters']:
+                        return self._host['bundles'][bundle]['plugins'][plugin]['contexts'][context]['parameters'][name]['ctypes']
 
-        if property_type == 'OfxTypeParameterInstance' and active_property_set:
-            active_id = property_id.rsplit('.', 1)[0]
-            param_id = property_id.rsplit('.', 1)[1]
-            if (active_id in self._host['active_plugins'] and
-                param_id in self._host['active_plugins'][active_id]['parameters']):
-                return self._host['active_plugins'][active_id]['parameters'][param_id]['ctypes']
+        if property_type == 'OfxTypeImageEffectInstance':
+            if active_uid in self._host['active']['plugins']:
+                return self._host['active']['plugins'][active_uid]['ctypes']
+
+        if property_type == 'OfxTypeClipInstance':
+            if active_uid in self._host['active']['plugins']:
+                if name in self._host['active']['plugins'][active_uid]['clips']:
+                    return self._host['active']['plugins'][active_uid]['clips'][name]['ctypes']
+
+        if property_type == 'OfxTypeParameterInstance':
+            if active_uid in self._host['active']['plugins']:
+                if name in self._host['active']['plugins'][active_uid]['parameters']:
+                    return self._host['active']['plugins'][active_uid]['parameters'][name]['ctypes']
 
         if property_type == 'OfxRenderAction':
-            return self._host['render_actions'][property_id]['ctypes']
+            if active_uid in self._host['active']['plugins']:
+                return self._host['active']['plugins'][active_uid]['render']['action']['ctypes']
 
         if property_type == 'OfxSequenceRenderAction':
-            return self._host['render_sequences'][property_id]['ctypes']
+            if active_uid in self._host['active']['plugins']:
+                return self._host['active']['plugins'][active_uid]['render']['sequence']['ctypes']
 
         if property_type == 'OfxImage':
-            return self._host['images'][property_id]['ctypes']
+            if active_uid in self._host['active']['plugins']:
+                if name in self._host['active']['plugins'][active_uid]['clips']:
+                    return self._host['active']['plugins'][active_uid]['clips'][name]['image']['ctypes']
 
         return None
 
@@ -139,12 +134,12 @@ class OfxPropertySuite():
         property_obj = self._get_property_object(ctype_handle)
 
         if property_obj is None:
-            (property_type, property_id) = self._decode_handle(ctype_handle)
-            print('ERROR: propSetString, unknown handle {} {}'.format(property_type, property_type)) 
+            property_type = self._get_handle_type(ctype_handle)
+            print('ERROR: propSetString, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
-            (property_type, property_id) = self._decode_handle(ctype_handle)
+            property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
             print('WARNING: propSetString, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
@@ -157,12 +152,12 @@ class OfxPropertySuite():
         property_obj = self._get_property_object(ctype_handle)
 
         if property_obj is None:
-            (property_type, property_id) = self._decode_handle(ctype_handle)
-            print('ERROR: propSetDouble, unknown handle {} {}'.format(property_type, property_type)) 
+            property_type = self._get_handle_type(ctype_handle)
+            print('ERROR: propSetDouble, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
-            (property_type, property_id) = self._decode_handle(ctype_handle)
+            property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
             print('WARNING: propSetDouble, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
@@ -175,12 +170,12 @@ class OfxPropertySuite():
         property_obj = self._get_property_object(ctype_handle)
 
         if property_obj is None:
-            (property_type, property_id) = self._decode_handle(ctype_handle)
-            print('ERROR: propSetInt, unknown handle {} {}'.format(property_type, property_type)) 
+            property_type = self._get_handle_type(ctype_handle)
+            print('ERROR: propSetInt, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
-            (property_type, property_id) = self._decode_handle(ctype_handle)
+            property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
             print('WARNING: propSetInt, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
@@ -193,12 +188,12 @@ class OfxPropertySuite():
         property_obj = self._get_property_object(ctype_handle)
 
         if property_obj is None:
-            (property_type, property_id) = self._decode_handle(ctype_handle)
-            print('ERROR: propSetPointer, unknown handle {} {}'.format(property_type, property_type)) 
+            property_type = self._get_handle_type(ctype_handle)
+            print('ERROR: propSetPointer, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
-            (property_type, property_id) = self._decode_handle(ctype_handle)
+            property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
             print('WARNING: propSetPointer, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
@@ -220,12 +215,12 @@ class OfxPropertySuite():
         property_obj = self._get_property_object(ctype_handle)
 
         if property_obj is None:
-            (property_type, property_id) = self._decode_handle(ctype_handle)
-            print('ERROR: propGetInt, unknown handle {} {}'.format(property_type, property_type)) 
+            property_type = self._get_handle_type(ctype_handle)
+            print('ERROR: propGetInt, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
-            (property_type, property_id) = self._decode_handle(ctype_handle)
+            property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
             print('WARNING: propGetInt, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
@@ -238,12 +233,12 @@ class OfxPropertySuite():
         property_obj = self._get_property_object(ctype_handle)
 
         if property_obj is None:
-            (property_type, property_id) = self._decode_handle(ctype_handle)
-            print('ERROR: propGetDouble, unknown handle {} {}'.format(property_type, property_type)) 
+            property_type = self._get_handle_type(ctype_handle)
+            print('ERROR: propGetDouble, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
-            (property_type, property_id) = self._decode_handle(ctype_handle)
+            property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
             print('WARNING: propGetDouble, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
@@ -256,12 +251,12 @@ class OfxPropertySuite():
         property_obj = self._get_property_object(ctype_handle)
 
         if property_obj is None:
-            (property_type, property_id) = self._decode_handle(ctype_handle)
-            print('ERROR: propGetInt, unknown handle {} {}'.format(property_type, property_type)) 
+            property_type = self._get_handle_type(ctype_handle)
+            print('ERROR: propGetInt, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
-            (property_type, property_id) = self._decode_handle(ctype_handle)
+            property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
             print('WARNING: propGetInt, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
@@ -274,12 +269,12 @@ class OfxPropertySuite():
         property_obj = self._get_property_object(ctype_handle)
 
         if property_obj is None:
-            (property_type, property_id) = self._decode_handle(ctype_handle)
-            print('ERROR: propGetPointer, unknown handle {} {}'.format(property_type, property_type)) 
+            property_type = self._get_handle_type(ctype_handle)
+            print('ERROR: propGetPointer, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
-            (property_type, property_id) = self._decode_handle(ctype_handle)
+            property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
             print('WARNING: propGetPointer, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
@@ -292,12 +287,12 @@ class OfxPropertySuite():
         property_obj = self._get_property_object(ctype_handle)
 
         if property_obj is None:
-            (property_type, property_id) = self._decode_handle(ctype_handle)
-            print('ERROR: propGetDoubleN, unknown handle {} {}'.format(property_type, property_type)) 
+            property_type = self._get_handle_type(ctype_handle)
+            print('ERROR: propGetDoubleN, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
-            (property_type, property_id) = self._decode_handle(ctype_handle)
+            property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
             print('WARNING: propGetDoubleN, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
@@ -312,12 +307,12 @@ class OfxPropertySuite():
         property_obj = self._get_property_object(ctype_handle)
 
         if property_obj is None:
-            (property_type, property_id) = self._decode_handle(ctype_handle)
-            print('ERROR: propGetIntN, unknown handle {} {}'.format(property_type, property_type)) 
+            property_type = self._get_handle_type(ctype_handle)
+            print('ERROR: propGetIntN, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
-            (property_type, property_id) = self._decode_handle(ctype_handle)
+            property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
             print('WARNING: propGetIntN, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
@@ -332,12 +327,12 @@ class OfxPropertySuite():
         property_obj = self._get_property_object(ctype_handle)
 
         if property_obj is None:
-            (property_type, property_id) = self._decode_handle(ctype_handle)
-            print('ERROR: propGetDimension, unknown handle {} {}'.format(property_type, property_type)) 
+            property_type = self._get_handle_type(ctype_handle)
+            print('ERROR: propGetDimension, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
-            (property_type, property_id) = self._decode_handle(ctype_handle)
+            property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
             print('WARNING: propGetDimension, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
