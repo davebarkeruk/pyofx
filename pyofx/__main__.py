@@ -52,6 +52,9 @@ if __name__ == "__main__":
     describe_subparser.add_argument('plugin',
                                     help='Name of plugin to use.')
 
+    describe_subparser.add_argument('-j', '--json',
+                                    help='Save parameter details to JSON file (can be used as input to render).')
+
     render_subparser = subparsers.add_parser('render',
                                              help='Render an OFX Plugin.',
                                              parents=[bundle_parser])
@@ -63,6 +66,8 @@ if __name__ == "__main__":
     render_subparser.add_argument('outfile',
                                   type=valid_filetype,
                                   help='Filename of output image.')
+    render_subparser.add_argument('-j', '--json',
+                                  help='Load parameter settings from JSON file.')
 
     args = parser.parse_args()
 
@@ -75,6 +80,8 @@ if __name__ == "__main__":
         if host.load_ofx_binary(args.dir, args.bundle) == OFX_STATUS_OK:
             status = host.plugin_load_and_describe(args.plugin)
             status = host.list_plugin_parameters(args.plugin)
+            if args.json is not None:
+                status = host.save_plugin_parameters(args.plugin, args.json)
     elif args.command == 'render':
         input_frame = Image.open(args.infile)
         (width, height) = input_frame.size
@@ -83,6 +90,8 @@ if __name__ == "__main__":
         if host.load_ofx_binary(args.dir, args.bundle) == OFX_STATUS_OK:
             status = host.plugin_load_and_describe(args.plugin)
             (instance_id, status) = host.create_plugin_instance(args.plugin, width, height)
+            if args.json is not None:
+                status = host.load_plugin_parameters(instance_id, args.json)
             status = host.render(args.plugin, instance_id, args.infile, args.outfile, width, height)
             status = host.destroy_plugin_instance(args.plugin, instance_id)
             status = host.unload_plugin(args.plugin)

@@ -11,6 +11,7 @@ import ctypes
 import copy
 import platform
 import os
+import json
 from ofx_ctypes import *
 from ofx_property_suite import *
 from ofx_parameter_suite import *
@@ -77,8 +78,8 @@ class ofx_host():
         print('\n\nPlugin Name\n===========\n\n{}\n'.format(plugin_id))
         print('Parameters\n==========\n')
         params = self._host['plugins'][plugin_id]['contexts']['OfxImageEffectContextFilter']['parameters']
-        for p in params:
-            param_string = params[p]['ctypes'].brief_details()
+        for key in params:
+            param_string = params[key]['ctypes'].brief_details()
             if param_string is not None:
                 print(param_string)
         print('\nClips\n=====\n')
@@ -87,6 +88,57 @@ class ofx_host():
             clip_string = clips[c]['ctypes'].brief_details()
             if clip_string is not None:
                 print(clip_string)
+
+        return OFX_STATUS_OK
+
+    def save_plugin_parameters(self, plugin_id, json_filename):
+        params = self._host['plugins'][plugin_id]['contexts']['OfxImageEffectContextFilter']['parameters']
+        active_params = {}
+        for key in params:
+            p = params[key]['ctypes'].as_tuple()
+            if p[0] is not None:
+                active_params[p[0]] = p[1]
+
+        with open(json_filename, 'w') as fp:
+            json.dump(active_params, fp, indent=4)
+
+        return OFX_STATUS_OK
+
+    def load_plugin_parameters(self, instance_id, json_filename):
+        current_params = self._host['active_plugins'][instance_id]['parameters']
+
+        with open(json_filename, 'r') as fp:
+            update_params = json.load(fp)
+
+        for p in update_params:
+            for cp in current_params:
+                script_name = current_params[cp]['ctypes'].value_as_string('OfxParamPropScriptName')
+                if script_name == p:
+                    param_type = current_params[cp]['ctypes'].value_as_string('OfxParamPropType')
+                    if param_type == 'OfxParamTypeInteger':
+                        current_params[cp]['value'] = [ctypes.c_int(update_params[p])]
+                    elif param_type == 'OfxParamTypeDouble':
+                        current_params[cp]['value'] = [ctypes.c_double(update_params[p])]
+                    elif param_type == 'OfxParamTypeBoolean':
+                        current_params[cp]['value'] = [ctypes.c_int(update_params[p])]
+                    elif param_type == 'OfxParamTypeChoice':
+                        current_params[cp]['value'] = [ctypes.c_int(update_params[p])]
+                    elif param_type == 'OfxParamTypeRGBA':
+                        current_params[cp]['value'] = [ctypes.c_double(d) for d in update_params[p]]
+                    elif param_type == 'OfxParamTypeRGB':
+                        current_params[cp]['value'] = [ctypes.c_double(d) for d in update_params[p]]
+                    elif param_type == 'OfxParamTypeDouble2D':
+                        current_params[cp]['value'] = [ctypes.c_double(d) for d in update_params[p]]
+                    elif param_type == 'OfxParamTypeInteger2D':
+                        current_params[cp]['value'] = [ctypes.c_int(i) for i in update_params[p]]
+                    elif param_type == 'OfxParamTypeDouble3D':
+                        current_params[cp]['value'] = [ctypes.c_double(d) for d in update_params[p]]
+                    elif param_type == 'OfxParamTypeInteger3D':
+                        current_params[cp]['value'] = [ctypes.c_int(i) for i in update_params[p]]
+                    elif param_type == 'OfxParamTypeString':
+                        current_params[cp]['value'] = [ctypes.create_string_buffer(update_params[p].encode('utf-8'))]
+
+        return OFX_STATUS_OK
 
     def load_ofx_binary(self, ofx_dir, bundle):
         bundle_dir = os.path.join(ofx_dir, bundle + '.ofx.bundle')

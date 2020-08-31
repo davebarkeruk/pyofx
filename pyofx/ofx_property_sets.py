@@ -206,9 +206,6 @@ class OfxPropertySet(object):
 
         print('***************************************')
 
-    def brief_details(self):
-        return None
-
 class OfxHostProperties(OfxPropertySet):
     def __init__(self):
         super().__init__()
@@ -381,6 +378,79 @@ class OfxParameterProperties(OfxPropertySet):
         param_type = self.value_as_string('OfxParamPropType')
         return param_type in OfxParameterProperties._value_param_types
 
+    def as_tuple(self):
+        if not self._is_value_param():
+            return (None, None)
+
+        if self._data['OfxParamPropSecret'].value == 1:
+            return (None, None)
+
+        param_type = self.value_as_string('OfxParamPropType')
+
+        if param_type == 'OfxParamTypeInteger':
+            return (self.value_as_string('OfxParamPropScriptName'),
+                    int(self._data['OfxParamPropDefault'][0].value)
+                   )
+        elif param_type == 'OfxParamTypeDouble':
+            return (self.value_as_string('OfxParamPropScriptName'),
+                    float(self._data['OfxParamPropDefault'][0].value)
+                   )
+        elif param_type == 'OfxParamTypeBoolean':
+            return (self.value_as_string('OfxParamPropScriptName'),
+                    int(self._data['OfxParamPropDefault'][0].value)
+                   )
+        elif param_type == 'OfxParamTypeChoice':
+            return (self.value_as_string('OfxParamPropScriptName'),
+                    int(self._data['OfxParamPropDefault'][0].value)
+                   )
+        elif param_type == 'OfxParamTypeRGBA':
+            return (self.value_as_string('OfxParamPropScriptName'),
+                    [float(self._data['OfxParamPropDefault'][0].value),
+                     float(self._data['OfxParamPropDefault'][1].value),
+                     float(self._data['OfxParamPropDefault'][2].value),
+                     float(self._data['OfxParamPropDefault'][3].value)
+                    ]
+                   )
+        elif param_type == 'OfxParamTypeRGB':
+            return (self.value_as_string('OfxParamPropScriptName'),
+                    [float(self._data['OfxParamPropDefault'][0].value),
+                     float(self._data['OfxParamPropDefault'][1].value),
+                     float(self._data['OfxParamPropDefault'][2].value)
+                    ]
+                   )
+        elif param_type == 'OfxParamTypeDouble2D':
+            return (self.value_as_string('OfxParamPropScriptName'),
+                    [float(self._data['OfxParamPropDefault'][0].value),
+                     float(self._data['OfxParamPropDefault'][1].value)
+                    ]
+                   )
+        elif param_type == 'OfxParamTypeInteger2D':
+            return (self.value_as_string('OfxParamPropScriptName'),
+                    [int(self._data['OfxParamPropDefault'][0].value),
+                     int(self._data['OfxParamPropDefault'][1].value)
+                    ]
+                   )
+        elif param_type == 'OfxParamTypeDouble3D':
+             return (self.value_as_string('OfxParamPropScriptName'),
+                     [float(self._data['OfxParamPropDefault'][0].value),
+                      float(self._data['OfxParamPropDefault'][1].value),
+                      float(self._data['OfxParamPropDefault'][2].value)
+                     ]
+                    )
+        elif param_type == 'OfxParamTypeInteger3D':
+             return (self.value_as_string('OfxParamPropScriptName'),
+                     [int(self._data['OfxParamPropDefault'][0].value),
+                      int(self._data['OfxParamPropDefault'][1].value),
+                      int(self._data['OfxParamPropDefault'][2].value)
+                     ]
+                    )
+        elif param_type == 'OfxParamTypeString':
+            return (self.value_as_string('OfxParamPropScriptName'),
+                    self.value_as_string('OfxParamPropDefault', 0)
+                   )
+
+        return (None, None)
+
     def brief_details(self):
         if not self._is_value_param():
             return None
@@ -475,7 +545,7 @@ class OfxParameterProperties(OfxPropertySet):
                 self.value_as_string('OfxParamPropDefault', 0)
                 )
 
-        return
+        return None
 
     def __init__(self, param_name, param_type):
         super().__init__()
