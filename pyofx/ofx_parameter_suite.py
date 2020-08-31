@@ -197,7 +197,7 @@ class OfxParameterSuite(object):
         elif ofx_property_type == 'OfxParamTypeString':
             print('PLACEHOLDER: paramGetValue for a OfxParamTypeString')
         else:
-            print('ERROR {} is not a valid type for paramGetValue ({})'.format(ofx_property_type, param_name))
+            print('ERROR {} is not a valid type for paramGetValue ({})'.format(ofx_property_type, name))
             return OFX_STATUS_FAILED
 
         return OFX_STATUS_OK
@@ -254,7 +254,7 @@ class OfxParameterSuite(object):
         elif ofx_property_type == 'OfxParamTypeString':
             print('PLACEHOLDER: paramGetValue for a OfxParamTypeString')
         else:
-            print('ERROR {} is not a valid type for paramSetValue ({})'.format(ofx_property_type, param_name))
+            print('ERROR {} is not a valid type for paramSetValue ({})'.format(ofx_property_type, name))
             return OFX_STATUS_FAILED
 
         return OFX_STATUS_OK
