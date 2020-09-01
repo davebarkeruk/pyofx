@@ -34,7 +34,7 @@ Arguments:
 Display the parameters in a plugin, or save the parameters to a JSON formatted file. 
 ```
 Usage:
-  pyofx params [-j JSON] dir bundle plugin`
+  pyofx params [-j JSON] dir bundle plugin
   
 Arguments:
   dir        Path to the ofx bundle directory.
@@ -47,7 +47,7 @@ Arguments:
 Render a plugin using the Filter context using default parameter values.
 ```
 Usage:
-  pyofx filter dir bundle plugin infile outfile`
+  pyofx filter dir bundle plugin infile outfile
   
 Arguments:
   dir        Path to the ofx bundle directory.
