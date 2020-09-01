@@ -3,11 +3,11 @@
 # pyofx
 Command line based Python3 host for rendering images through OpenFX plugins.
 
-Current version's features:
+Current features:
 * Process a single frame through an OFX plugin.
 * Display plugins inside an OFX bundle.
 * Display a plugin's paramters.
-* Use JSON file to control a plugin parameter values at render time.
+* Use JSON file to control plugin parameters at render time.
 * Use filter or general OFX contexts.
 
 ## Requirements
@@ -73,6 +73,6 @@ How to render in General context:
 1. Use the `params` command to create a JSON parameters file.
 2. Edit the JSON file.
    - Add paths to image files. Note, optional paths can be left as null.
-   - Make desired changes to plugin'sparameters.
+   - Make desired changes to plugin parameters.
    - Set frame_size, the pixel width and height of the render frame.
 3. Use the editted JSON file as an input to the `render` command.
