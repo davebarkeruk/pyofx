@@ -214,15 +214,14 @@ class OfxImageEffectSuite():
 
         return OFX_STATUS_OK
 
-    ##################################################################################################################
-    #
-    # PLACEHOLDERS
-    #
-    ##################################################################################################################
+    def _clip_get_region_of_definition_callback(self, ctype_clip_handle, ctype_time, ctype_bounds):
+        # The documentation for this function in OFX 1.4 makes no sense.
+        # The function definition does not match the docs, seems to be missing the
+        # output image handle which holds the RoD image data.
+        # So just sending back failed, as I guess it doesn't work in OFX 1.4
 
-    def _clip_get_region_of_definition_callback(self, clip, time, bounds):
-        print('PLACEHOLDER clipGetRegionOfDefinition')
         return OFX_STATUS_FAILED
+
 
 
 

@@ -126,7 +126,7 @@ class OfxPropertySuite():
 
     ##################################################################################################################
     #
-    # SET CALLBACK FUNTIONS
+    # SET CALLBACK FUNCTIONS
     #
     ##################################################################################################################
 
@@ -205,9 +205,90 @@ class OfxPropertySuite():
 
         return OFX_STATUS_OK
 
+    def _prop_set_pointer_n_callback(self, ctype_handle, ctype_string, ctype_count, ctype_value):
+        property_obj = self._get_property_object(ctype_handle)
+
+        if property_obj is None:
+            property_type = self._get_handle_type(ctype_handle)
+            print('ERROR: propSetPointerN, unknown handle {}'.format(property_type)) 
+            return OFX_STATUS_ERR_BAD_HANDLE
+
+        if not property_obj.contains(ctype_string.decode('utf-8')):
+            property_type = self._get_handle_type(ctype_handle)
+            property_string = ctype_string.decode('utf-8')
+            print('WARNING: propSetPointerN, property {} not in {}'.format(property_string, property_type)) 
+            return OFX_STATUS_ERR_UNKNOWN
+
+        ctype_value_ptr = ctypes.cast(ctype_value, ctypes.POINTER(ctypes.c_int))
+        for index in range(0, ctype_count):
+            property_obj.update(ctype_string.decode('utf-8'), ctype_value_ptr[index], 'ptr', index)
+
+        return OFX_STATUS_OK
+
+    def _prop_set_string_n_callback(self, ctype_handle, ctype_string, ctype_count, ctype_value):
+        property_obj = self._get_property_object(ctype_handle)
+
+        if property_obj is None:
+            property_type = self._get_handle_type(ctype_handle)
+            print('ERROR: propSetStringN, unknown handle {}'.format(property_type)) 
+            return OFX_STATUS_ERR_BAD_HANDLE
+
+        if not property_obj.contains(ctype_string.decode('utf-8')):
+            property_type = self._get_handle_type(ctype_handle)
+            property_string = ctype_string.decode('utf-8')
+            print('WARNING: propSetStringN, property {} not in {}'.format(property_string, property_type)) 
+            return OFX_STATUS_ERR_UNKNOWN
+
+        ctype_value_ptr = ctypes.cast(ctype_value, ctypes.POINTER(ctypes.c_char_p))
+        for index in range(0, ctype_count):
+            value_as_string = ctype_value_ptr[index].decode('utf-8')
+            property_obj.update(ctype_string.decode('utf-8'), value_as_string, 'ptr', index)
+
+        return OFX_STATUS_OK
+
+    def _prop_set_double_n_callback(self, ctype_handle, ctype_string, ctype_count, ctype_value):
+        property_obj = self._get_property_object(ctype_handle)
+
+        if property_obj is None:
+            property_type = self._get_handle_type(ctype_handle)
+            print('ERROR: propSetDoubleN, unknown handle {}'.format(property_type)) 
+            return OFX_STATUS_ERR_BAD_HANDLE
+
+        if not property_obj.contains(ctype_string.decode('utf-8')):
+            property_type = self._get_handle_type(ctype_handle)
+            property_string = ctype_string.decode('utf-8')
+            print('WARNING: propSetDoubleN, property {} not in {}'.format(property_string, property_type)) 
+            return OFX_STATUS_ERR_UNKNOWN
+
+        ctype_value_ptr = ctypes.cast(ctype_value, ctypes.POINTER(ctypes.c_double))
+        for index in range(0, ctype_count):
+            property_obj.update(ctype_string.decode('utf-8'), ctype_value_ptr[index], 'dbl', index)
+
+        return OFX_STATUS_OK
+
+    def _prop_set_int_n_callback(self, ctype_handle, ctype_string, ctype_count, ctype_value):
+        property_obj = self._get_property_object(ctype_handle)
+
+        if property_obj is None:
+            property_type = self._get_handle_type(ctype_handle)
+            print('ERROR: propSetIntN, unknown handle {}'.format(property_type)) 
+            return OFX_STATUS_ERR_BAD_HANDLE
+
+        if not property_obj.contains(ctype_string.decode('utf-8')):
+            property_type = self._get_handle_type(ctype_handle)
+            property_string = ctype_string.decode('utf-8')
+            print('WARNING: propSetIntN, property {} not in {}'.format(property_string, property_type)) 
+            return OFX_STATUS_ERR_UNKNOWN
+
+        ctype_value_ptr = ctypes.cast(ctype_value, ctypes.POINTER(ctypes.c_int))
+        for index in range(0, ctype_count):
+            property_obj.update(ctype_string.decode('utf-8'), ctype_value_ptr[index], 'int', index)
+
+        return OFX_STATUS_OK
+
     ##################################################################################################################
     #
-    # GET CALLBACK FUNTIONS
+    # GET CALLBACK FUNCTIONS
     #
     ##################################################################################################################
 
@@ -323,6 +404,46 @@ class OfxPropertySuite():
 
         return OFX_STATUS_OK
 
+    def _prop_get_pointer_n_callback(self, ctype_handle, ctype_string, ctype_count, ctype_value):
+        property_obj = self._get_property_object(ctype_handle)
+
+        if property_obj is None:
+            property_type = self._get_handle_type(ctype_handle)
+            print('ERROR: propGetPointerN, unknown handle {}'.format(property_type)) 
+            return OFX_STATUS_ERR_BAD_HANDLE
+
+        if not property_obj.contains(ctype_string.decode('utf-8')):
+            property_type = self._get_handle_type(ctype_handle)
+            property_string = ctype_string.decode('utf-8')
+            print('WARNING: propGetPointerN, property {} not in {}'.format(property_string, property_type)) 
+            return OFX_STATUS_ERR_UNKNOWN
+
+        ctype_value_ptr = ctypes.cast(ctype_value, ctypes.POINTER(ctypes.c_void_p))
+        for index in range(0, ctype_count):
+            ctype_value_ptr[index] = int(property_obj.get(ctype_string.decode('utf-8'), index).value)
+
+        return OFX_STATUS_OK
+
+    def _prop_get_string_n_callback(self, ctype_handle, ctype_string, ctype_count, ctype_value):
+        property_obj = self._get_property_object(ctype_handle)
+
+        if property_obj is None:
+            property_type = self._get_handle_type(ctype_handle)
+            print('ERROR: propGetStringN, unknown handle {}'.format(property_type)) 
+            return OFX_STATUS_ERR_BAD_HANDLE
+
+        if not property_obj.contains(ctype_string.decode('utf-8')):
+            property_type = self._get_handle_type(ctype_handle)
+            property_string = ctype_string.decode('utf-8')
+            print('WARNING: propGetStringN, property {} not in {}'.format(property_string, property_type)) 
+            return OFX_STATUS_ERR_UNKNOWN
+
+        ctype_value_ptr = ctypes.cast(ctype_value, ctypes.POINTER(ctypes.c_char_p))
+        for index in range(0, ctype_count):
+            ctype_value_ptr[index] = int(property_obj.get(ctype_string.decode('utf-8'), index).value)
+
+        return OFX_STATUS_OK
+
     def _prop_get_dimension_callback(self, ctype_handle, ctype_string, ctype_count):
         property_obj = self._get_property_object(ctype_handle)
 
@@ -343,38 +464,10 @@ class OfxPropertySuite():
 
     ##################################################################################################################
     #
-    # PLACEHOLDERS
+    # UTILITY CALLBACK FUNCTIONS
     #
     ##################################################################################################################
 
-    def _prop_get_pointer_n_callback(self, ctype_handle, ctype_string, ctype_count, ctype_value):
-        print('PLACEHOLDER propGetPointerN')
-        return OFX_STATUS_FAILED
-
-    def _prop_get_string_n_callback(self, ctype_handle, ctype_string, ctype_count, ctype_value):
-        print('PLACEHOLDER propGetStringN')
-        return OFX_STATUS_FAILED
-
-    def _prop_set_pointer_n_callback(self, ctype_handle, ctype_string, ctype_count, ctype_value):
-        print('PLACEHOLDER propSetPointerN')
-        return OFX_STATUS_FAILED
-
-    def _prop_set_string_n_callback(self, ctype_handle, ctype_string, ctype_count, ctype_value):
-        print('PLACEHOLDER propSetStringN')
-        return OFX_STATUS_FAILED
-
-    def _prop_set_double_n_callback(self, ctype_handle, ctype_string, ctype_count, ctype_value):
-        print('PLACEHOLDER propSetDoubleN')
-        return OFX_STATUS_FAILED
-
-    def _prop_set_int_n_callback(self, ctype_handle, ctype_string, ctype_count, ctype_value):
-        print('PLACEHOLDER propSetIntN')
-        return OFX_STATUS_FAILED
-
     def _prop_reset_callback(self, ctype_handle, ctype_string):
-        print('PLACEHOLDER propReset')
-        return OFX_STATUS_FAILED
-
-
-
-
+        # As there is no UI this callback should never get called.
+        return OFX_STATUS_OK

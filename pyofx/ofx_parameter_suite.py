@@ -263,54 +263,46 @@ class OfxParameterSuite(object):
         # Currently parameters don't animate so we just send back paramSetValue
         return self._param_set_value_callback(ctype_param_handle, d_arg_1, d_arg_2, d_arg_3, d_arg_4, i_arg_1, i_arg_2, i_arg_3, i_arg_4)
 
-    ##################################################################################################################
-    #
-    # PLACEHOLDERS
-    #
-    ##################################################################################################################
-
-    def _param_get_derivative_callback(self, paramHandle, time, vargs):
-        print('PLACEHOLDER paramGetDerivative')
+    def _param_get_derivative_callback(self, ctype_param_handle, ctype_time, ctype_vargs):
+        # Parametric parameters are not supported
         return OFX_STATUS_FAILED
 
-    def _param_get_integral_callback(self, paramHandle, time1,  time2, vargs):
-        print('PLACEHOLDER paramGetIntegral')
+    def _param_get_integral_callback(self, ctype_param_handle, ctype_time1, ctype_time2, ctype_vargs):
+        # Parametric parameters are not supported
         return OFX_STATUS_FAILED
 
-    def _param_get_num_keys_callback(self, paramHandle, numberOfKeys):
-        print('PLACEHOLDER paramGetNumKeys')
-        return OFX_STATUS_FAILED
+    def _param_get_num_keys_callback(self, ctype_param_handle, ctype_number_of_keys):
+        # Nothing animates so always 0 keys
+        ctype_number_of_keys.contents.value = 0
+        return OFX_STATUS_OK
 
-    def _param_get_key_time_callback(self,paramHandle, nthKey, time):
-        print('PLACEHOLDER paramGetKeyTime')
-        return OFX_STATUS_FAILED
+    def _param_get_key_time_callback(self, ctype_param_handle, ctype_keys, ctype_time):
+        # Nothing animates so always time 0
+        ctype_time.contents.value = 0
+        return OFX_STATUS_OK
 
-    def _param_get_key_index_callback(self,paramHandle, time, direction, index):
-        print('PLACEHOLDER paramGetKeyIndex')
-        return OFX_STATUS_FAILED
+    def _param_get_key_index_callback(self, ctype_param_handle, ctype_time, ctype_direction, ctype_index):
+        # No keys to return
+        ctype_index.contents.value = -1
+        return OFX_STATUS_OK
 
     def _param_delete_key_callback(self, paramHandle, time):
-        print('PLACEHOLDER paramDeleteKey')
-        return OFX_STATUS_FAILED
+        # No keys to delete
+        return OFX_STATUS_OK
 
     def _param_delete_all_keys_callback(self, paramHandle):
-        print('PLACEHOLDER paramDeleteAllKeys')
-        return OFX_STATUS_FAILED
+        # No keys to delete
+        return OFX_STATUS_OK
 
     def _param_copy_callback(self, paramTo, paramFrom, dstOffset, frameRange):
-        print('PLACEHOLDER paramCopy')
-        return OFX_STATUS_FAILED
+        # No UI so this shouldn't get called
+        return OFX_STATUS_OK
 
     def _param_edit_begin_callback(self, paramSet, name):
-        print('PLACEHOLDER paramEditBegin')
-        return OFX_STATUS_FAILED
+        # No undo/redo so this is not needed
+        return OFX_STATUS_OK
 
     def _param_edit_end_callback(self,paramSet):
-        print('PLACEHOLDER paramEditEnd')
-        return OFX_STATUS_FAILED
-
-
-
-
-
+        # No undo/redo so this is not needed
+        return OFX_STATUS_OK
 
