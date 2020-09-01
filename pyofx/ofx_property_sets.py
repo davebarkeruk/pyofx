@@ -179,32 +179,6 @@ class OfxPropertySet(object):
 
         return True
 
-    @property
-    def data(self):
-        return self._data
-
-    def full_print(self):
-        print('***************************************')
-        print(self.__class__.__name__)
-        print()
-        for key in self._data:
-            print('  {}'.format(key))
-            if isinstance(self._data[key], list):
-                for index in range(0, len(self._data[key])):
-                    if OFX_PROPERTY_DEFS[key]['param_type'] == 'str':
-                        s = ctypes.cast(self._data[key][index], ctypes.c_char_p).value.decode('utf-8')
-                        print('     -> {} ({})'.format(s, ctypes.addressof(self._data[key][index])))
-                    else:
-                        print('     -> {} ({})'.format(self._data[key][index], ctypes.addressof(self._data[key][index])))
-            else:
-                if OFX_PROPERTY_DEFS[key]['param_type'] == 'str':
-                    s = ctypes.cast(self._data[key], ctypes.c_char_p).value.decode('utf-8')
-                    print('      {} ({})'.format(s, ctypes.addressof(self._data[key])))
-                else:
-                    print('      {} ({})'.format(self._data[key], ctypes.addressof(self._data[key])))
-
-        print('***************************************')
-
 class OfxHostProperties(OfxPropertySet):
     def __init__(self):
         super().__init__()

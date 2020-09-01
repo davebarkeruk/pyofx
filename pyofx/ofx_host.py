@@ -74,11 +74,11 @@ class ofx_host():
             print('WARNING: {} is not supported by host'.format(requested_suite))
             return 0
 
-    def list_all_plugins(self, bundle):
+    def _list_all_plugins(self, bundle):
         for p in self._host['bundles'][bundle]['plugins']:
             print(p)
 
-    def list_plugin_parameters(self, bundle, plugin_id, context='OfxImageEffectContextFilter'):
+    def _list_plugin_parameters(self, bundle, plugin_id, context):
         print('\n')
         print('Plugin Name')
         print('===========\n')
@@ -102,24 +102,44 @@ class ofx_host():
         print('\n')
         return OFX_STATUS_OK
 
-    def save_plugin_parameters(self, bundle, plugin_id, json_filename, context='OfxImageEffectContextFilter'):
+    def _save_plugin_parameters(self, bundle, plugin_id, context, json_filename):
+        plugin_variables = {
+            'bundle': bundle,
+            'plugin': plugin_id,
+            'context': context,
+            'parameters': {},
+            'frame_size': {
+                'width': 1280,
+                'height': 720
+            },
+            'image_paths': {
+                'required': {},
+                'optional': {}
+            } 
+        }
+
         params = self._host['bundles'][bundle]['plugins'][plugin_id]['contexts'][context]['parameters']
-        active_params = {}
+        clips = self._host['bundles'][bundle]['plugins'][plugin_id]['contexts'][context]['clips']
+
         for key in params:
             p = params[key]['ctypes'].as_tuple()
             if p[0] is not None:
-                active_params[p[0]] = p[1]
+                plugin_variables['parameters'][p[0]] = p[1]
+
+        for key in clips:
+            is_optional = clips[key]['ctypes'].get('OfxImageClipPropOptional').value
+            if is_optional == 1:
+                plugin_variables['image_paths']['optional'][key] = None
+            else:
+                plugin_variables['image_paths']['required'][key] = None
 
         with open(json_filename, 'w') as fp:
-            json.dump(active_params, fp, indent=4)
+            json.dump(plugin_variables, fp, indent=4)
 
         return OFX_STATUS_OK
 
-    def load_plugin_parameters(self, active_uid, json_filename):
+    def _load_plugin_parameters(self, active_uid, update_params):
         current_params = self._host['active']['plugins'][active_uid]['parameters']
-
-        with open(json_filename, 'r') as fp:
-            update_params = json.load(fp)
 
         for p in update_params:
             for cp in current_params:
@@ -151,18 +171,20 @@ class ofx_host():
 
         return OFX_STATUS_OK
 
-    def load_ofx_binary(self, ofx_dir, bundle):
+    def _generate_ofx_binary_filename(self, ofx_dir, bundle):
         bundle_dir = os.path.join(ofx_dir, bundle + '.ofx.bundle')
         if platform.system() == 'Linux':
-            filename = os.path.join(bundle_dir, 'Contents', 'Linux-x86-64', bundle + '.ofx')
+            return os.path.join(bundle_dir, 'Contents', 'Linux-x86-64', bundle + '.ofx')
         elif platform.system() == 'Windows':
-            filename = os.path.join(bundle_dir, 'Contents', 'Win64', bundle + '.ofx')
+            return os.path.join(bundle_dir, 'Contents', 'Win64', bundle + '.ofx')
         elif platform.system() == 'Darwin':
-            filename = os.path.join(bundle_dir, 'Contents', 'MacOS-x86-64', bundle + '.ofx')
+            return os.path.join(bundle_dir, 'Contents', 'MacOS-x86-64', bundle + '.ofx')
         else:
             print('ERROR: Cannot determin the system')
-            return OFX_STATUS_FAILED
- 
+            return None
+
+    def _load_ofx_binary(self, ofx_dir, bundle):
+        filename = self._generate_ofx_binary_filename(ofx_dir, bundle)
         plugin_lib = ctypes.CDLL(filename)
         plugin_count = plugin_lib.OfxGetNumberOfPlugins()
         self._host['bundles'][bundle] = {
@@ -204,46 +226,7 @@ class ofx_host():
 
         return OFX_STATUS_OK
 
-    def _add_active_plugin(self, bundle_id, plugin_id, context, width, height):
-        active_uid = str(uuid.uuid1())
-
-        effect_handle = CStructOfxHandle(
-            ctypes.c_char_p(b'OfxTypeImageEffectInstance'),
-            ctypes.c_char_p(bundle_id.encode('utf-8')),
-            ctypes.c_char_p(plugin_id.encode('utf-8')),
-            ctypes.c_char_p(context.encode('utf-8')),
-            ctypes.c_char_p(active_uid.encode('utf-8')),
-            ctypes.c_char_p(active_uid.encode('utf-8'))
-        )
-
-        clips = {}
-        parameters = {}
-        plugin = self._host['bundles'][bundle_id]['plugins'][plugin_id]
-
-        for key in plugin['contexts'][context]['clips']:
-            descriptor = plugin['contexts'][context]['clips'][key]
-            clips[key] = self._image_effect_suite.create_clip_instance(descriptor, active_uid)
-            clips[key]['ctypes'].add_instance_properties()
-
-        for key in plugin['contexts'][context]['parameters']:
-            descriptor = plugin['contexts'][context]['parameters'][key]
-            parameters[key] = self._parameter_suite.create_parameter_instance(descriptor, active_uid)
-
-        active_plugin = {
-            'handle':     effect_handle,
-            'mainEntry':  plugin['mainEntry'],
-            'plugin':     plugin_id,
-            'context':    context,
-            'clips':      clips,
-            'parameters': parameters,
-            'render':     {'sequence': None, 'action':None},
-            'ctypes':     OfxEffectInstanceProperties(context, width, height)
-        }
-
-        self._host['active']['plugins'][active_uid] = active_plugin
-        return active_uid
-
-    def plugin_load_and_describe(self, bundle, plugin_id):
+    def _plugin_load_and_describe(self, bundle, plugin_id):
         plugin = self._host['bundles'][bundle]['plugins'][plugin_id]
 
         entry_point = cfunc_plugin_entry_point(plugin['mainEntry'])
@@ -300,11 +283,45 @@ class ofx_host():
 
         return OFX_STATUS_OK
 
-    def create_plugin_instance(self, bundle, plugin_id, width, height):
-        plugin = self._host['bundles'][bundle]['plugins'][plugin_id]
+    def _create_plugin_instance(self, bundle_id, plugin_id, context, width, height):
+        plugin = self._host['bundles'][bundle_id]['plugins'][plugin_id]
         entry_point = cfunc_plugin_entry_point(plugin['mainEntry'])
 
-        active_uid = self._add_active_plugin(bundle, plugin_id, 'OfxImageEffectContextFilter', width, height)
+        active_uid = str(uuid.uuid1())
+
+        effect_handle = CStructOfxHandle(
+            ctypes.c_char_p(b'OfxTypeImageEffectInstance'),
+            ctypes.c_char_p(bundle_id.encode('utf-8')),
+            ctypes.c_char_p(plugin_id.encode('utf-8')),
+            ctypes.c_char_p(context.encode('utf-8')),
+            ctypes.c_char_p(active_uid.encode('utf-8')),
+            ctypes.c_char_p(active_uid.encode('utf-8'))
+        )
+
+        clips = {}
+        parameters = {}
+
+        for key in plugin['contexts'][context]['clips']:
+            descriptor = plugin['contexts'][context]['clips'][key]
+            clips[key] = self._image_effect_suite.create_clip_instance(descriptor, active_uid)
+            clips[key]['ctypes'].add_instance_properties()
+
+        for key in plugin['contexts'][context]['parameters']:
+            descriptor = plugin['contexts'][context]['parameters'][key]
+            parameters[key] = self._parameter_suite.create_parameter_instance(descriptor, active_uid)
+
+        active_plugin = {
+            'handle':     effect_handle,
+            'mainEntry':  plugin['mainEntry'],
+            'plugin':     plugin_id,
+            'context':    context,
+            'clips':      clips,
+            'parameters': parameters,
+            'render':     {'sequence': None, 'action':None},
+            'ctypes':     OfxEffectInstanceProperties(context, width, height)
+        }
+
+        self._host['active']['plugins'][active_uid] = active_plugin
 
         entry_point(
             ctypes.c_char_p(b'OfxActionCreateInstance'),
@@ -313,9 +330,9 @@ class ofx_host():
             0
         )
 
-        return(active_uid, OFX_STATUS_OK)
+        return active_uid
 
-    def connect_image(self, active_uid, clip_name, filename, width, height):
+    def _connect_image(self, active_uid, clip_name, filename, width, height):
         im_frame = ImageOps.flip(Image.open(filename))
         im_frame = im_frame.convert('RGBA')
         im_frame = im_frame.resize((width, height), Image.ANTIALIAS)
@@ -343,7 +360,7 @@ class ofx_host():
 
         return  OFX_STATUS_OK
 
-    def connect_buffer(self, active_uid, clip_name, width, height):
+    def _connect_buffer(self, active_uid, clip_name, width, height):
         buffer = np.ascontiguousarray(np.zeros(width*height*4, np.uint8), dtype=np.uint8)
         buffer_ptr = buffer.ctypes.data_as(ctypes.c_void_p).value
 
@@ -368,17 +385,17 @@ class ofx_host():
 
         return OFX_STATUS_OK
 
-    def disconnect_image(self, active_uid, clip_name):
+    def _disconnect_image(self, active_uid, clip_name):
         clip = self._host['active']['plugins'][active_uid]['clips'][clip_name]
         clip['image'] = {}
         clip['ctypes'].update('OfxImageClipPropConnected', 0, 'int')
 
         return  OFX_STATUS_OK
 
-    def disconnect_buffer(self, active_uid, clip_name):
-        return self.disconnect_image(active_uid, clip_name)
+    def _disconnect_buffer(self, active_uid, clip_name):
+        return self._disconnect_image(active_uid, clip_name)
 
-    def save_image(self, active_uid, clip_name, filename, width, height):
+    def _save_image(self, active_uid, clip_name, filename, width, height):
         clip = self._host['active']['plugins'][active_uid]['clips'][clip_name]
 
         if clip['ctypes'].get('OfxImageClipPropConnected').value == 0:
@@ -393,7 +410,7 @@ class ofx_host():
 
         return OFX_STATUS_OK
 
-    def begin_render_sequence(self, active_uid):
+    def _begin_render_sequence(self, active_uid):
         plugin = self._host['active']['plugins'][active_uid]
 
         entry_point = cfunc_plugin_entry_point(plugin['mainEntry'])
@@ -423,7 +440,7 @@ class ofx_host():
 
         return OFX_STATUS_OK
 
-    def render(self, active_uid, width, height):
+    def _render(self, active_uid, width, height):
         plugin = self._host['active']['plugins'][active_uid]
 
         entry_point = cfunc_plugin_entry_point(plugin['mainEntry'])
@@ -455,7 +472,7 @@ class ofx_host():
 
         return OFX_STATUS_OK
 
-    def end_render_sequence(self, active_uid):
+    def _end_render_sequence(self, active_uid):
         plugin = self._host['active']['plugins'][active_uid]
 
         entry_point = cfunc_plugin_entry_point(plugin['mainEntry'])
@@ -471,7 +488,7 @@ class ofx_host():
 
         return OFX_STATUS_OK
 
-    def destroy_plugin_instance(self, active_uid):
+    def _destroy_plugin_instance(self, active_uid):
         plugin = self._host['active']['plugins'][active_uid]
 
         entry_point = cfunc_plugin_entry_point(plugin['mainEntry'])
@@ -487,7 +504,7 @@ class ofx_host():
 
         return OFX_STATUS_OK
 
-    def unload_plugin(self, bundle, plugin_id):
+    def _unload_plugin(self, bundle, plugin_id):
         plugin = self._host['bundles'][bundle]['plugins'][plugin_id]
         entry_point = cfunc_plugin_entry_point(plugin['mainEntry'])
 
@@ -499,6 +516,88 @@ class ofx_host():
         )
 
         return OFX_STATUS_OK
+
+    def display_plugins(self, directory, bundle):
+        self._load_ofx_binary(directory, bundle)
+        self._list_all_plugins(bundle)
+
+    def display_params(self, directory, bundle, plugin):
+        context = 'OfxImageEffectContextGeneral'
+        self._load_ofx_binary(directory, bundle)
+        self._plugin_load_and_describe(bundle, plugin)
+        self._list_plugin_parameters(bundle, plugin, context)
+
+    def params_to_json(self, directory, bundle, plugin, json_file):
+        context = 'OfxImageEffectContextGeneral'
+        self._load_ofx_binary(directory, bundle)
+        self._plugin_load_and_describe(bundle, plugin)
+        self._save_plugin_parameters(bundle, plugin, context, json_file)
+
+    def filter_render(self, directory, bundle, plugin, infile, outfile):
+        context = 'OfxImageEffectContextFilter'
+
+        input_frame = Image.open(infile)
+        (width, height) = input_frame.size
+
+        self._load_ofx_binary(directory, bundle)
+        self._plugin_load_and_describe(bundle, plugin)
+        active_uid = self._create_plugin_instance(bundle, plugin, context, width, height)
+        self._begin_render_sequence(active_uid)
+        self._connect_image(active_uid, 'Source', infile, width, height)
+        self._connect_buffer(active_uid, 'Output', width, height)
+        self._render(active_uid, width, height)
+        self._save_image(active_uid, 'Output', outfile, width, height)
+        self._disconnect_image(active_uid, 'Source')
+        self._disconnect_buffer(active_uid, 'Output')
+        self._end_render_sequence(active_uid)
+        self._destroy_plugin_instance(active_uid)
+        self._unload_plugin(bundle, plugin)
+
+    def json_render(self, directory, json_file):
+        with open(json_file, 'r') as fp:
+            settings = json.load(fp)
+
+        for i in settings['image_paths']['required']:
+            if settings['image_paths']['required'][i] is None:
+                print('Required image path for \'{}\' is not set in JSON file'.format(i))
+                exit()
+
+        width = settings['frame_size']['width']
+        height = settings['frame_size']['height']
+
+        self._load_ofx_binary(directory, settings['bundle'])
+        self._plugin_load_and_describe(settings['bundle'], settings['plugin'])
+        active_uid = self._create_plugin_instance(settings['bundle'], settings['plugin'], settings['context'], width, height)
+        self._load_plugin_parameters(active_uid, settings['parameters'])
+        self._begin_render_sequence(active_uid)
+
+        for i in settings['image_paths']['required']:
+            if i == 'Output':
+                self._connect_buffer(active_uid, 'Output', width, height)
+            else:
+                self._connect_image(active_uid, i, settings['image_paths']['required'][i], width, height)
+
+        for i in settings['image_paths']['optional']:
+            if settings['image_paths']['optional'][i] is not None:
+                self._connect_image(active_uid, i, settings['image_paths']['optional'][i], width, height)
+
+        self._render(active_uid, width, height)
+
+        self._save_image(active_uid, 'Output', settings['image_paths']['required']['Output'], width, height)
+
+        for i in settings['image_paths']['required']:
+            if i == 'Output':
+                self._disconnect_buffer(active_uid, i)
+            else:
+                self._disconnect_image(active_uid, i)
+
+        for i in settings['image_paths']['optional']:
+            if settings['image_paths']['optional'][i] is not None:
+                self._disconnect_image(active_uid, i)
+
+        self._end_render_sequence(active_uid)
+        self._destroy_plugin_instance(active_uid)
+        self._unload_plugin(settings['bundle'], settings['plugin'])
 
 
 
