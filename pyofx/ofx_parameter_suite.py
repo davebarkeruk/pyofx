@@ -119,6 +119,9 @@ class OfxParameterSuite(object):
         active_uid = handle.active_uid.decode("utf-8")
         name = ctype_name.decode("utf-8")
 
+        if name not in self._host['active']['plugins'][active_uid]['parameters']:
+            return OFX_STATUS_ERR_UNKNOWN
+
         param_handle = self._host['active']['plugins'][active_uid]['parameters'][name]['handle']
 
         ctype_param_handle.contents.value = ctypes.cast(ctypes.pointer(param_handle), ctypes.c_void_p).value
