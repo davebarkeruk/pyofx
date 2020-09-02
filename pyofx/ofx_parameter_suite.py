@@ -194,8 +194,12 @@ class OfxParameterSuite(object):
         elif ofx_property_type == 'OfxParamTypePushButton':
             va_list = ctypes.cast(vargs, ctypes.POINTER(ctypes.c_int))
             va_list[0] = param['value'][0].value
+        elif ofx_property_type == 'OfxParamTypeCustom':
+            va_list = ctypes.cast(vargs, ctypes.POINTER(ctypes.c_char_p))
+            va_list[0] = param['value'][0].value
         elif ofx_property_type == 'OfxParamTypeString':
-            print('PLACEHOLDER: paramGetValue for a OfxParamTypeString')
+            va_list = ctypes.cast(vargs, ctypes.POINTER(ctypes.c_char_p))
+            va_list[0] = param['value'][0].value
         else:
             print('ERROR {} is not a valid type for paramGetValue ({})'.format(ofx_property_type, name))
             return OFX_STATUS_FAILED
@@ -251,8 +255,10 @@ class OfxParameterSuite(object):
             param['value'][2] = ctypes.c_int(i_arg_3)
         elif ofx_property_type == 'OfxParamTypePushButton':
             param['value'][0] = ctypes.c_int(i_arg_1)
+        elif ofx_property_type == 'OfxParamTypeCustom':
+            param['value'][0] = ctypes.create_string_buffer(ctypes.c_char_p(i_arg_1).value)
         elif ofx_property_type == 'OfxParamTypeString':
-            print('PLACEHOLDER: paramGetValue for a OfxParamTypeString')
+            param['value'][0] = ctypes.create_string_buffer(ctypes.c_char_p(i_arg_1).value)
         else:
             print('ERROR {} is not a valid type for paramSetValue ({})'.format(ofx_property_type, name))
             return OFX_STATUS_FAILED

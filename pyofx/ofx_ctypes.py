@@ -273,10 +273,10 @@ cfunc_param_set_value =            ctypes.CFUNCTYPE(ctypes.c_int,
                                                     ctypes.c_double,
                                                     ctypes.c_double,
                                                     ctypes.c_double,
-                                                    ctypes.c_int,
-                                                    ctypes.c_int,
-                                                    ctypes.c_int,
-                                                    ctypes.c_int)
+                                                    ctypes.c_void_p,
+                                                    ctypes.c_void_p,
+                                                    ctypes.c_void_p,
+                                                    ctypes.c_void_p)
 
 cfunc_param_set_value_at_time =    ctypes.CFUNCTYPE(ctypes.c_int,
                                                     ctypes.c_void_p,
@@ -285,10 +285,10 @@ cfunc_param_set_value_at_time =    ctypes.CFUNCTYPE(ctypes.c_int,
                                                     ctypes.c_double,
                                                     ctypes.c_double,
                                                     ctypes.c_double,
-                                                    ctypes.c_int,
-                                                    ctypes.c_int,
-                                                    ctypes.c_int,
-                                                    ctypes.c_int)
+                                                    ctypes.c_void_p,
+                                                    ctypes.c_void_p,
+                                                    ctypes.c_void_p,
+                                                    ctypes.c_void_p)
 
 cfunc_param_get_num_keys =         ctypes.CFUNCTYPE(ctypes.c_int,
                                                     ctypes.c_void_p,
