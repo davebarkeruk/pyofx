@@ -8,6 +8,7 @@
 
 import ctypes
 import copy
+import logging
 from ofx_ctypes import *
 from ofx_property_sets import *
 from ofx_status_codes import *
@@ -200,7 +201,7 @@ class OfxImageEffectSuite():
         if self._host['active']['memory'][name]['lock_count'] < 1:
             del(self._host['active']['memory'][name])
         else:
-            print('WARNING: Trying to delete imageMemory that is still locked')
+            logging.warning('Trying to delete imageMemory that is still locked')
             return OFX_STATUS_FAILED
 
         return OFX_STATUS_OK

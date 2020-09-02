@@ -7,6 +7,7 @@
 # file that should have been included as part of this package.
 
 import ctypes
+import logging
 from ofx_property_defs import OFX_PROPERTY_DEFS
 
 class OfxPropertySet(object):
@@ -19,12 +20,12 @@ class OfxPropertySet(object):
                 if 0 <= index < len(self._data[key]):
                     return ctypes.addressof(self._data[key][index])
                 else:
-                    print('ERROR: Index {} out of range in {}'.format(index, key))
+                    logging.error('Index {} out of range in {}'.format(index, key))
                     return None
             else:
                 return ctypes.addressof(self._data[key])
         else:
-            print('ERROR: {} not in property set'.format(key))
+            logging.error('{} not in property set'.format(key))
             return None
 
     def length(self, key):
@@ -35,7 +36,7 @@ class OfxPropertySet(object):
             else:
                 return 1
         else:
-            print('ERROR: {} not in property set'.format(key))
+            logging.error('{} not in property set'.format(key))
             return None
 
     def update(self, key, property_value, property_type, index=None):
@@ -48,7 +49,7 @@ class OfxPropertySet(object):
         elif property_type == 'ptr':
             new_value = ctypes.c_ulonglong(int(property_value))
         else:
-            print('ERROR: {} invalid type for single dimension property'.format(new_type))
+            logging.error('{} invalid type for single dimension property'.format(new_type))
             return False
 
         if key in self._data:
@@ -62,7 +63,7 @@ class OfxPropertySet(object):
 
             return True
         else:
-            print('ERROR: {} not in property set'.format(key))
+            logging.error('{} not in property set'.format(key))
             return False
 
     def get(self, key, index=None):
@@ -71,12 +72,12 @@ class OfxPropertySet(object):
                 if 0 <= index < len(self._data[key]):
                     return self._data[key][index]
                 else:
-                    print('ERROR: Index {} out of range in {}'.format(index, key))
+                    logging.error('Index {} out of range in {}'.format(index, key))
                     return None
             else:
                 return self._data[key]
         else:
-            print('ERROR: {} not in property set'.format(key))
+            logging.error('{} not in property set'.format(key))
             return None
 
     def value_as_string(self, key, index=None):
@@ -88,7 +89,7 @@ class OfxPropertySet(object):
                     else:
                         return str(self._data[key][index].value)
                 else:
-                    print('ERROR: Index {} out of range in {}'.format(index, key))
+                    logging.error('Index {} out of range in {}'.format(index, key))
                     return None
             else:
                 if 'c_char_Array' in str(type(self._data[key])):
@@ -96,7 +97,7 @@ class OfxPropertySet(object):
                 else:
                     return str(self._data[key].value)
         else:
-            print('ERROR: {} not in property set'.format(key))
+            logging.error('{} not in property set'.format(key))
             return None
 
     def contains(self, key):
@@ -104,15 +105,15 @@ class OfxPropertySet(object):
 
     def add(self, key, property_value=None, property_type=None, replace=False):
         if key in self._data and not replace:
-            print('ERROR: {} already in property set'.format(key))
+            logging.error('{} already in property set'.format(key))
             return False
 
         if key not in OFX_PROPERTY_DEFS:
-            print('ERROR: {} not a supported OFX property'.format(key))
+            logging.error('{} not a supported OFX property'.format(key))
             return False
 
         if OFX_PROPERTY_DEFS[key]['default'] is None and property_value is None:
-            print('ERROR: {} requires property_value to be supplied'.format(key))
+            logging.error('{} requires property_value to be supplied'.format(key))
             return False
         elif property_value is None:
             new_value = OFX_PROPERTY_DEFS[key]['default']
@@ -121,37 +122,37 @@ class OfxPropertySet(object):
 
         if isinstance(OFX_PROPERTY_DEFS[key]['param_type'], list):
             if property_type is None:
-                print('ERROR: {} requires property_type to be supplied'.format(key))
+                logging.error('{} requires property_type to be supplied'.format(key))
                 return False
             if property_type not in OFX_PROPERTY_DEFS[key]['param_type']:
-                print('ERROR: {} does not support property_type {}'.format(key, property_type))
+                logging.error('{} does not support property_type {}'.format(key, property_type))
                 return False
             new_type = property_type
         else:
             new_type = OFX_PROPERTY_DEFS[key]['param_type']
 
         if isinstance(new_value, list) and OFX_PROPERTY_DEFS[key]['dimensions'] == 1:
-            print('ERROR: {} does not support list objects'.format(key))
+            logging.error('{} does not support list objects'.format(key))
             return False
 
         if not isinstance(new_value, list) and OFX_PROPERTY_DEFS[key]['dimensions'] != 1:
-            print('ERROR: {} requires a list object'.format(key))
+            logging.error('{} requires a list object'.format(key))
             return False
 
         if OFX_PROPERTY_DEFS[key]['dimensions'] > 1:
             if OFX_PROPERTY_DEFS[key]['dimensions'] != len(new_value):
-                print('ERROR: len does not match dimensions for {} property'.format(key))
+                logging.error('len does not match dimensions for {} property'.format(key))
                 return False
 
         if OFX_PROPERTY_DEFS[key]['valid_values'] is not None:
             if isinstance(new_value, list):
                 for i in new_value:
                     if i not in OFX_PROPERTY_DEFS[key]['valid_values']:
-                        print('ERROR: {} not a valid value for {} property'.format(i, key))
+                        logging.error('{} not a valid value for {} property'.format(i, key))
                         return False
             else:
                 if new_value not in OFX_PROPERTY_DEFS[key]['valid_values']:
-                    print('ERROR: {} not a valid value for {} property'.format(new_value, key))
+                    logging.error('{} not a valid value for {} property'.format(new_value, key))
                     return False
 
         if isinstance(new_value, list):
@@ -162,7 +163,7 @@ class OfxPropertySet(object):
             elif new_type == 'str':
                 self._data[key] = [ctypes.create_string_buffer(i.encode('utf-8')) for i in new_value]
             else:
-                print('ERROR: {} invalid type for multi dimensional property'.format(new_type))
+                logging.error('{} invalid type for multi dimensional property'.format(new_type))
                 return False
         else:
             if new_type == 'int':
@@ -174,7 +175,7 @@ class OfxPropertySet(object):
             elif new_type == 'ptr':
                 self._data[key] = ctypes.c_ulonglong(int(new_value))
             else:
-                print('ERROR: {} invalid type for single dimension property'.format(new_type))
+                logging.error('{} invalid type for single dimension property'.format(new_type))
                 return False
 
         return True
@@ -604,7 +605,7 @@ class OfxParameterProperties(OfxPropertySet):
         elif param_type == 'OfxParamTypePage':
             self._page_params()
         else:
-            print('ERROR: {} invalid type for parameter'.format(param_type))
+            logging.error('{} invalid type for parameter'.format(param_type))
 
     def _group_params(self):
         self.add('OfxParamPropGroupOpen')

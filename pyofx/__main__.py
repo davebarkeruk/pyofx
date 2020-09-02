@@ -8,6 +8,7 @@
 
 import argparse
 import os
+import logging
 from ofx_host import ofx_host
 
 def extant_file(x):
@@ -26,8 +27,15 @@ def valid_filetype(x):
     return x
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Simple command line OFX plugin render host.',
+    parser = argparse.ArgumentParser(description='Simple command line OFX plugin render host',
                                      epilog='Use -h on commands for further info.')
+
+    logging_parser = argparse.ArgumentParser(add_help=False)
+    logging_parser.add_argument('--loglevel',
+                        metavar='',
+                        default='error',
+                        choices=['debug', 'info', 'warning', 'error', 'critical'],
+                        help='Set logging level {debug|info|warning|error|critical}')
 
     subparsers = parser.add_subparsers(dest='command',
                                        metavar='{command}')
@@ -36,44 +44,61 @@ if __name__ == "__main__":
     bundle_parser = argparse.ArgumentParser(add_help=False)
     bundle_parser.add_argument('dir',
                                type=extant_dir,
-                               help='Path to the ofx bundle directory.')
+                               help='Path to the ofx bundle directory')
     bundle_parser.add_argument('bundle',
-                               help='Name of the ofx bundle to load.')
+                               help='Name of the ofx bundle to load')
 
     list_subparser = subparsers.add_parser('list',
-                                           help='List all the plugins in the OFX bundle.',
-                                           parents=[bundle_parser])
+                                           help='List all the plugins in the OFX bundle',
+                                           parents=[bundle_parser, logging_parser])
 
     param_subparser = subparsers.add_parser('params',
-                                            help='Display or save a plugin\'s parameters.',
-                                            parents=[bundle_parser])
+                                            help='Display or save a plugin\'s parameters',
+                                            parents=[bundle_parser, logging_parser])
     param_subparser.add_argument('plugin',
-                                 help='Name of plugin to use.')
+                                 help='Name of plugin to use')
     param_subparser.add_argument('-j', '--json',
-                                 help='Save parameters to JSON file. Used as input to render.')
+                                 help='Save parameters to JSON file. Used as input to render')
 
     filter_subparser = subparsers.add_parser('filter',
-                                             help='Render using filter context and default parameters.',
-                                             parents=[bundle_parser])
+                                             help='Render using filter context and default parameters',
+                                             parents=[bundle_parser, logging_parser])
     filter_subparser.add_argument('plugin',
-                                  help='Name of plugin to use.')
+                                  help='Name of plugin to use')
     filter_subparser.add_argument('infile',
                                   type=extant_file,
-                                  help='Filename of input image.')
+                                  help='Filename of input image')
     filter_subparser.add_argument('outfile',
                                   type=valid_filetype,
-                                  help='Filename of output image.')
+                                  help='Filename of output image')
 
     render_subparser = subparsers.add_parser('render',
-                                             help='Render using JSON file to set parameters.')
+                                             help='Render using JSON file to set parameters',
+                                             parents=[logging_parser])
     render_subparser.add_argument('dir',
                                   type=extant_dir,
-                                  help='Path to the ofx bundle directory.')
+                                  help='Path to the ofx bundle directory')
     render_subparser.add_argument('json',
                                   type=extant_file,
-                                  help='Load parameter settings from JSON file.')
+                                  help='Load parameter settings from JSON file')
 
     args = parser.parse_args()
+
+    if args.loglevel == 'debug':
+        log_level = level=logging.DEBUG
+    elif args.loglevel == 'info':
+        log_level = level=logging.INFO
+    elif args.loglevel == 'warning':
+        log_level = level=logging.WARNING
+    elif args.loglevel == 'error':
+        log_level = level=logging.ERROR
+    else:
+        log_level = level=logging.CRITICAL
+
+    logging.basicConfig(
+        format='%(levelname)-10s %(message)s',
+        level=log_level
+    )
 
     host = ofx_host()
 

@@ -386,7 +386,7 @@ cfunc_clip_release_image =            ctypes.CFUNCTYPE(ctypes.c_int,
 cfunc_clip_get_region_of_definition = ctypes.CFUNCTYPE(ctypes.c_int,
                                                        ctypes.c_void_p,
                                                        ctypes.c_double,
-                                                       ctypes.POINTER(CStructOfxRectD))
+                                                       ctypes.c_void_p)
 
 cfunc_abort =                         ctypes.CFUNCTYPE(ctypes.c_int,
                                                        ctypes.c_void_p)

@@ -13,6 +13,7 @@ import platform
 import os
 import json
 import uuid
+import logging
 from ofx_ctypes import *
 from ofx_property_suite import *
 from ofx_parameter_suite import *
@@ -71,7 +72,7 @@ class ofx_host():
         elif requested_suite == 'OfxMessageSuite':
             return self._message_suite.get_pointer_as_int()
         else:
-            print('WARNING: {} is not supported by host'.format(requested_suite))
+            logging.warning('{} is not supported by host'.format(requested_suite))
             return 0
 
     def _list_all_plugins(self, bundle):
@@ -180,7 +181,7 @@ class ofx_host():
         elif platform.system() == 'Darwin':
             return os.path.join(bundle_dir, 'Contents', 'MacOS-x86-64', bundle + '.ofx')
         else:
-            print('ERROR: Cannot determin the system')
+            logging.error('Cannot determin the system')
             return None
 
     def _load_ofx_binary(self, ofx_dir, bundle):
@@ -559,7 +560,7 @@ class ofx_host():
 
         for i in settings['image_paths']['required']:
             if settings['image_paths']['required'][i] is None:
-                print('Required image path for \'{}\' is not set in JSON file'.format(i))
+                logging.critical('Required image path for \'{}\' is not set in JSON file'.format(i))
                 exit()
 
         width = settings['frame_size']['width']

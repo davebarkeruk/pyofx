@@ -10,6 +10,7 @@
 #       All we can do it send notifications that they arrived.
 
 import ctypes
+import logging
 from ofx_ctypes import *
 from ofx_status_codes import *
 
@@ -42,19 +43,19 @@ class OfxMessageSuite(object):
             handle_string = ''
 
         if message_type == OFX_MESSAGE_FATAL:
-            print('FATAL: Message from plugin {}'.format(handle_string))
+            logging.critical('Message from plugin {}'.format(handle_string))
             return OFX_STATUS_OK
         elif message_type == OFX_MESSAGE_ERROR:
-            print('ERROR: Message from plugin {}'.format(handle_string))
+            logging.error('Message from plugin {}'.format(handle_string))
             return OFX_STATUS_OK
         elif message_type == OFX_MESSAGE_WARNING:
-            print('WARNING: Message from plugin {}'.format(handle_string))
+            logging.warning('Message from plugin {}'.format(handle_string))
+            return OFX_STATUS_OK
+        elif message_type == OFX_MESSAGE_LOG:
+            logging.info('Log message from plugin {}'.format(handle_string))
             return OFX_STATUS_OK
         elif message_type == OFX_MESSAGE_MESSAGE:
             print('Message from plugin {}'.format(handle_string))
-            return OFX_STATUS_OK
-        elif message_type == OFX_MESSAGE_LOG:
-            print('Log message from plugin {}'.format(handle_string))
             return OFX_STATUS_OK
         elif message_type == OFX_MESSAGE_QUESTION:
             print('Question from plugin {} default answer Yes'.format(handle_string))

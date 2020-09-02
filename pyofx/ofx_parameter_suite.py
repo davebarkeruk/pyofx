@@ -8,6 +8,7 @@
 
 import ctypes
 import copy
+import logging
 from ofx_ctypes import *
 from ofx_property_sets import *
 from ofx_status_codes import *
@@ -204,7 +205,7 @@ class OfxParameterSuite(object):
             va_list = ctypes.cast(vargs, ctypes.POINTER(ctypes.c_char_p))
             va_list[0] = param['value'][0].value
         else:
-            print('ERROR {} is not a valid type for paramGetValue ({})'.format(ofx_property_type, name))
+            logging.error('{} is not a valid type for paramGetValue ({})'.format(ofx_property_type, name))
             return OFX_STATUS_FAILED
 
         return OFX_STATUS_OK
@@ -263,7 +264,7 @@ class OfxParameterSuite(object):
         elif ofx_property_type == 'OfxParamTypeString':
             param['value'][0] = ctypes.create_string_buffer(ctypes.c_char_p(i_arg_1).value)
         else:
-            print('ERROR {} is not a valid type for paramSetValue ({})'.format(ofx_property_type, name))
+            logging.error('{} is not a valid type for paramSetValue ({})'.format(ofx_property_type, name))
             return OFX_STATUS_FAILED
 
         return OFX_STATUS_OK

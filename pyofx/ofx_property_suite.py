@@ -8,6 +8,7 @@
 
 import ctypes
 import re
+import logging
 from ofx_ctypes import *
 from ofx_status_codes import *
 
@@ -135,13 +136,13 @@ class OfxPropertySuite():
 
         if property_obj is None:
             property_type = self._get_handle_type(ctype_handle)
-            print('ERROR: propSetString, unknown handle {}'.format(property_type)) 
+            logging.error('propSetString, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
             property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
-            print('WARNING: propSetString, property {} not in {}'.format(property_string, property_type)) 
+            logging.warning('propSetString, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
 
         property_obj.update(ctype_string.decode('utf-8'), ctype_value.decode('utf-8'), 'str', ctype_index)
@@ -153,13 +154,13 @@ class OfxPropertySuite():
 
         if property_obj is None:
             property_type = self._get_handle_type(ctype_handle)
-            print('ERROR: propSetDouble, unknown handle {}'.format(property_type)) 
+            logging.error('propSetDouble, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
             property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
-            print('WARNING: propSetDouble, property {} not in {}'.format(property_string, property_type)) 
+            logging.warning('propSetDouble, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
 
         property_obj.update(ctype_string.decode('utf-8'), ctype_value, 'dbl', ctype_index)
@@ -171,13 +172,13 @@ class OfxPropertySuite():
 
         if property_obj is None:
             property_type = self._get_handle_type(ctype_handle)
-            print('ERROR: propSetInt, unknown handle {}'.format(property_type)) 
+            logging.error('propSetInt, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
             property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
-            print('WARNING: propSetInt, property {} not in {}'.format(property_string, property_type)) 
+            logging.warning('propSetInt, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
 
         property_obj.update(ctype_string.decode('utf-8'), ctype_value, 'int', ctype_index)
@@ -189,13 +190,13 @@ class OfxPropertySuite():
 
         if property_obj is None:
             property_type = self._get_handle_type(ctype_handle)
-            print('ERROR: propSetPointer, unknown handle {}'.format(property_type)) 
+            logging.error('propSetPointer, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
             property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
-            print('WARNING: propSetPointer, property {} not in {}'.format(property_string, property_type)) 
+            logging.warning('propSetPointer, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
 
         if ctype_value:
@@ -210,13 +211,13 @@ class OfxPropertySuite():
 
         if property_obj is None:
             property_type = self._get_handle_type(ctype_handle)
-            print('ERROR: propSetPointerN, unknown handle {}'.format(property_type)) 
+            logging.error('propSetPointerN, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
             property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
-            print('WARNING: propSetPointerN, property {} not in {}'.format(property_string, property_type)) 
+            logging.warning('propSetPointerN, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
 
         ctype_value_ptr = ctypes.cast(ctype_value, ctypes.POINTER(ctypes.c_int))
@@ -230,13 +231,13 @@ class OfxPropertySuite():
 
         if property_obj is None:
             property_type = self._get_handle_type(ctype_handle)
-            print('ERROR: propSetStringN, unknown handle {}'.format(property_type)) 
+            logging.error('propSetStringN, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
             property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
-            print('WARNING: propSetStringN, property {} not in {}'.format(property_string, property_type)) 
+            logging.warning('propSetStringN, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
 
         ctype_value_ptr = ctypes.cast(ctype_value, ctypes.POINTER(ctypes.c_char_p))
@@ -251,13 +252,13 @@ class OfxPropertySuite():
 
         if property_obj is None:
             property_type = self._get_handle_type(ctype_handle)
-            print('ERROR: propSetDoubleN, unknown handle {}'.format(property_type)) 
+            logging.error('propSetDoubleN, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
             property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
-            print('WARNING: propSetDoubleN, property {} not in {}'.format(property_string, property_type)) 
+            logging.warning('propSetDoubleN, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
 
         ctype_value_ptr = ctypes.cast(ctype_value, ctypes.POINTER(ctypes.c_double))
@@ -271,13 +272,13 @@ class OfxPropertySuite():
 
         if property_obj is None:
             property_type = self._get_handle_type(ctype_handle)
-            print('ERROR: propSetIntN, unknown handle {}'.format(property_type)) 
+            logging.error('propSetIntN, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
             property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
-            print('WARNING: propSetIntN, property {} not in {}'.format(property_string, property_type)) 
+            logging.warning('propSetIntN, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
 
         ctype_value_ptr = ctypes.cast(ctype_value, ctypes.POINTER(ctypes.c_int))
@@ -297,13 +298,13 @@ class OfxPropertySuite():
 
         if property_obj is None:
             property_type = self._get_handle_type(ctype_handle)
-            print('ERROR: propGetInt, unknown handle {}'.format(property_type)) 
+            logging.error('propGetInt, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
             property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
-            print('WARNING: propGetInt, property {} not in {}'.format(property_string, property_type)) 
+            logging.warning('propGetInt, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
 
         ctype_value.contents.value = property_obj.ptr(ctype_string.decode('utf-8'), ctype_index)
@@ -315,13 +316,13 @@ class OfxPropertySuite():
 
         if property_obj is None:
             property_type = self._get_handle_type(ctype_handle)
-            print('ERROR: propGetDouble, unknown handle {}'.format(property_type)) 
+            logging.error('propGetDouble, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
             property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
-            print('WARNING: propGetDouble, property {} not in {}'.format(property_string, property_type)) 
+            logging.warning('propGetDouble, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
 
         ctype_value.contents.value = property_obj.get(ctype_string.decode('utf-8'), ctype_index).value
@@ -333,13 +334,13 @@ class OfxPropertySuite():
 
         if property_obj is None:
             property_type = self._get_handle_type(ctype_handle)
-            print('ERROR: propGetInt, unknown handle {}'.format(property_type)) 
+            logging.error('propGetInt, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
             property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
-            print('WARNING: propGetInt, property {} not in {}'.format(property_string, property_type)) 
+            logging.warning('propGetInt, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
 
         ctype_value.contents.value = property_obj.get(ctype_string.decode('utf-8'), ctype_index).value
@@ -351,13 +352,13 @@ class OfxPropertySuite():
 
         if property_obj is None:
             property_type = self._get_handle_type(ctype_handle)
-            print('ERROR: propGetPointer, unknown handle {}'.format(property_type)) 
+            logging.error('propGetPointer, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
             property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
-            print('WARNING: propGetPointer, property {} not in {}'.format(property_string, property_type)) 
+            logging.warning('propGetPointer, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
 
         ctype_value.contents.value = property_obj.get(ctype_string.decode('utf-8'), ctype_index).value
@@ -369,13 +370,13 @@ class OfxPropertySuite():
 
         if property_obj is None:
             property_type = self._get_handle_type(ctype_handle)
-            print('ERROR: propGetDoubleN, unknown handle {}'.format(property_type)) 
+            logging.error('propGetDoubleN, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
             property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
-            print('WARNING: propGetDoubleN, property {} not in {}'.format(property_string, property_type)) 
+            logging.warning('propGetDoubleN, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
 
         ctype_value_ptr = ctypes.cast(ctype_value, ctypes.POINTER(ctypes.c_double))
@@ -389,13 +390,13 @@ class OfxPropertySuite():
 
         if property_obj is None:
             property_type = self._get_handle_type(ctype_handle)
-            print('ERROR: propGetIntN, unknown handle {}'.format(property_type)) 
+            logging.error('propGetIntN, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
             property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
-            print('WARNING: propGetIntN, property {} not in {}'.format(property_string, property_type)) 
+            logging.warning('propGetIntN, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
 
         ctype_value_ptr = ctypes.cast(ctype_value, ctypes.POINTER(ctypes.c_int))
@@ -409,13 +410,13 @@ class OfxPropertySuite():
 
         if property_obj is None:
             property_type = self._get_handle_type(ctype_handle)
-            print('ERROR: propGetPointerN, unknown handle {}'.format(property_type)) 
+            logging.error('propGetPointerN, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
             property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
-            print('WARNING: propGetPointerN, property {} not in {}'.format(property_string, property_type)) 
+            logging.warning('propGetPointerN, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
 
         ctype_value_ptr = ctypes.cast(ctype_value, ctypes.POINTER(ctypes.c_void_p))
@@ -429,13 +430,13 @@ class OfxPropertySuite():
 
         if property_obj is None:
             property_type = self._get_handle_type(ctype_handle)
-            print('ERROR: propGetStringN, unknown handle {}'.format(property_type)) 
+            logging.error('propGetStringN, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
             property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
-            print('WARNING: propGetStringN, property {} not in {}'.format(property_string, property_type)) 
+            logging.warning('propGetStringN, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
 
         ctype_value_ptr = ctypes.cast(ctype_value, ctypes.POINTER(ctypes.c_char_p))
@@ -449,13 +450,13 @@ class OfxPropertySuite():
 
         if property_obj is None:
             property_type = self._get_handle_type(ctype_handle)
-            print('ERROR: propGetDimension, unknown handle {}'.format(property_type)) 
+            logging.error('propGetDimension, unknown handle {}'.format(property_type)) 
             return OFX_STATUS_ERR_BAD_HANDLE
 
         if not property_obj.contains(ctype_string.decode('utf-8')):
             property_type = self._get_handle_type(ctype_handle)
             property_string = ctype_string.decode('utf-8')
-            print('WARNING: propGetDimension, property {} not in {}'.format(property_string, property_type)) 
+            logging.warning('propGetDimension, property {} not in {}'.format(property_string, property_type)) 
             return OFX_STATUS_ERR_UNKNOWN
 
         ctype_count.contents.value = property_obj.length(ctype_string.decode('utf-8'))
