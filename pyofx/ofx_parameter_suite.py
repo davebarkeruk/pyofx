@@ -9,34 +9,35 @@
 import ctypes
 import copy
 import logging
-from ofx_ctypes import *
-from ofx_property_sets import *
-from ofx_status_codes import *
+import platform
+import ofx_ctypes
+import ofx_property_sets
+import ofx_status_codes
 
 class OfxParameterSuite(object):
     def __init__(self, host):
         self._host = host
 
-        self._param_define =               cfunc_param_define(self._param_define_callback)
-        self._param_get_handle =           cfunc_param_get_handle(self._param_get_handle_callback)
-        self._param_set_get_property_set = cfunc_param_set_get_property_set(self._param_set_get_property_set_callback)
-        self._param_get_property_set =     cfunc_param_get_property_set(self._param_get_property_set_callback)
-        self._param_get_value =            cfunc_param_get_value(self._param_get_value_callback)
-        self._param_get_value_at_time =    cfunc_param_get_value_at_time(self._param_get_value_at_time_callback)
-        self._param_get_derivative =       cfunc_param_get_derivative(self._param_get_derivative_callback)
-        self._param_get_integral =         cfunc_param_get_integral(self._param_get_integral_callback)
-        self._param_set_value =            cfunc_param_set_value(self._param_set_value_callback)
-        self._param_set_value_at_time =    cfunc_param_set_value_at_time(self._param_set_value_at_time_callback)
-        self._param_get_num_keys =         cfunc_param_get_num_keys(self._param_get_num_keys_callback)
-        self._param_get_key_time =         cfunc_param_get_key_time(self._param_get_key_time_callback)
-        self._param_get_key_index =        cfunc_param_get_key_index(self._param_get_key_index_callback)
-        self._param_delete_key =           cfunc_param_delete_key(self._param_delete_key_callback)
-        self._param_delete_all_keys =      cfunc_param_delete_all_keys(self._param_delete_all_keys_callback)
-        self._param_copy =                 cfunc_param_copy(self._param_copy_callback)
-        self._param_edit_begin =           cfunc_param_edit_begin(self._param_edit_begin_callback)
-        self._param_edit_end =             cfunc_param_edit_end(self._param_edit_end_callback)
+        self._param_define =               ofx_ctypes.cfunc_param_define(self._param_define_callback)
+        self._param_get_handle =           ofx_ctypes.cfunc_param_get_handle(self._param_get_handle_callback)
+        self._param_set_get_property_set = ofx_ctypes.cfunc_param_set_get_property_set(self._param_set_get_property_set_callback)
+        self._param_get_property_set =     ofx_ctypes.cfunc_param_get_property_set(self._param_get_property_set_callback)
+        self._param_get_value =            ofx_ctypes.cfunc_param_get_value(self._param_get_value_callback)
+        self._param_get_value_at_time =    ofx_ctypes.cfunc_param_get_value_at_time(self._param_get_value_at_time_callback)
+        self._param_get_derivative =       ofx_ctypes.cfunc_param_get_derivative(self._param_get_derivative_callback)
+        self._param_get_integral =         ofx_ctypes.cfunc_param_get_integral(self._param_get_integral_callback)
+        self._param_set_value =            ofx_ctypes.cfunc_param_set_value(self._param_set_value_callback)
+        self._param_set_value_at_time =    ofx_ctypes.cfunc_param_set_value_at_time(self._param_set_value_at_time_callback)
+        self._param_get_num_keys =         ofx_ctypes.cfunc_param_get_num_keys(self._param_get_num_keys_callback)
+        self._param_get_key_time =         ofx_ctypes.cfunc_param_get_key_time(self._param_get_key_time_callback)
+        self._param_get_key_index =        ofx_ctypes.cfunc_param_get_key_index(self._param_get_key_index_callback)
+        self._param_delete_key =           ofx_ctypes.cfunc_param_delete_key(self._param_delete_key_callback)
+        self._param_delete_all_keys =      ofx_ctypes.cfunc_param_delete_all_keys(self._param_delete_all_keys_callback)
+        self._param_copy =                 ofx_ctypes.cfunc_param_copy(self._param_copy_callback)
+        self._param_edit_begin =           ofx_ctypes.cfunc_param_edit_begin(self._param_edit_begin_callback)
+        self._param_edit_end =             ofx_ctypes.cfunc_param_edit_end(self._param_edit_end_callback)
 
-        self._suite = CStructOfxParameterSuite(
+        self._suite = ofx_ctypes.CStructOfxParameterSuite(
             self._param_define,
             self._param_get_handle,
             self._param_set_get_property_set,
@@ -63,7 +64,7 @@ class OfxParameterSuite(object):
     def create_parameter_instance(self, parameter_descriptor, active_uid):
         handle = parameter_descriptor['handle']
 
-        parameter_handle = CStructOfxHandle(
+        parameter_handle = ofx_ctypes.CStructOfxHandle(
             ctypes.c_char_p(b'OfxTypeParameterInstance'),
             handle.bundle,
             handle.plugin,
@@ -85,7 +86,7 @@ class OfxParameterSuite(object):
 
 
     def _param_define_callback(self, ctype_image_effect_handle, ctype_param_type, ctype_name, ctype_property_handle):
-        handle = CStructOfxHandle.from_address(ctype_image_effect_handle)
+        handle = ofx_ctypes.CStructOfxHandle.from_address(ctype_image_effect_handle)
 
         bundle = handle.bundle.decode("utf-8")
         plugin = handle.plugin.decode("utf-8")
@@ -93,7 +94,7 @@ class OfxParameterSuite(object):
         name = ctype_name.decode("utf-8")
         param_type = ctype_param_type.decode("utf-8")
 
-        param_handle = CStructOfxHandle(
+        param_handle = ofx_ctypes.CStructOfxHandle(
             ctypes.c_char_p(b'OfxTypeParameter'),
             handle.bundle,
             handle.plugin,
@@ -104,24 +105,21 @@ class OfxParameterSuite(object):
 
         self._host['bundles'][bundle]['plugins'][plugin]['contexts'][context]['parameters'][name] = {
             'handle': param_handle,
-            'ctypes': OfxParameterProperties(name, param_type)
+            'ctypes': ofx_property_sets.OfxParameterProperties(name, param_type)
         }
 
         ctype_property_handle.contents.value = ctypes.cast(ctypes.pointer(param_handle), ctypes.c_void_p).value
 
-        return OFX_STATUS_OK
+        return ofx_status_codes.OFX_STATUS_OK
 
     def _param_get_handle_callback(self, ctype_image_effect_handle, ctype_name, ctype_param_handle, ctype_property_handle):
-        handle = CStructOfxHandle.from_address(ctype_image_effect_handle)
+        handle = ofx_ctypes.CStructOfxHandle.from_address(ctype_image_effect_handle)
 
-        bundle = handle.bundle.decode("utf-8")
-        plugin = handle.plugin.decode("utf-8")
-        context = handle.context.decode("utf-8")
         active_uid = handle.active_uid.decode("utf-8")
         name = ctype_name.decode("utf-8")
 
         if name not in self._host['active']['plugins'][active_uid]['parameters']:
-            return OFX_STATUS_ERR_UNKNOWN
+            return ofx_status_codes.OFX_STATUS_ERR_UNKNOWN
 
         param_handle = self._host['active']['plugins'][active_uid]['parameters'][name]['handle']
 
@@ -130,22 +128,22 @@ class OfxParameterSuite(object):
         if ctype_property_handle:
             ctype_property_handle.contents.value = ctypes.cast(ctypes.pointer(param_handle), ctypes.c_void_p).value
 
-        return OFX_STATUS_OK
+        return ofx_status_codes.OFX_STATUS_OK
 
     def _param_set_get_property_set_callback(self, ctype_param_handle, ctype_property_handle):
         ctype_property_handle.contents.value = ctype_param_handle
 
-        return OFX_STATUS_OK
+        return ofx_status_codes.OFX_STATUS_OK
 
     def _param_get_property_set_callback(self, ctype_param_handle, ctype_property_handle):
         ctype_property_handle.contents.value = ctype_param_handle
 
-        return OFX_STATUS_OK
+        return ofx_status_codes.OFX_STATUS_OK
 
     # This is a horrendous hack to deal with variadic args in function call.
     # Seems to work on Linux, may crash spectacularly on other platforms 
     def _param_get_value_callback(self, ctype_param_handle, vargs):
-        handle = CStructOfxHandle.from_address(ctype_param_handle)
+        handle = ofx_ctypes.CStructOfxHandle.from_address(ctype_param_handle)
 
         active_uid = handle.active_uid.decode("utf-8")
         name = handle.name.decode("utf-8")
@@ -206,9 +204,9 @@ class OfxParameterSuite(object):
             va_list[0] = param['value'][0].value
         else:
             logging.error('{} is not a valid type for paramGetValue ({})'.format(ofx_property_type, name))
-            return OFX_STATUS_FAILED
+            return ofx_status_codes.OFX_STATUS_FAILED
 
-        return OFX_STATUS_OK
+        return ofx_status_codes.OFX_STATUS_OK
 
     def _param_get_value_at_time_callback(self, ctype_param_handle, ctype_time, vargs):
         # Currently parameters don't animate so we just send back paramGetValue
@@ -216,8 +214,10 @@ class OfxParameterSuite(object):
 
     # This is a horrendous hack to deal with variadic args in function call.
     # Seems to work on Linux, may crash spectacularly on other platforms 
-    def _param_set_value_callback(self, ctype_param_handle, d_arg_1, d_arg_2, d_arg_3, d_arg_4, i_arg_1, i_arg_2, i_arg_3, i_arg_4):
-        handle = CStructOfxHandle.from_address(ctype_param_handle)
+    def _param_set_value_callback(self, ctype_param_handle, d_arg_1, d_arg_2, d_arg_3, d_arg_4,
+                                                            p_arg_1, p_arg_2, p_arg_3, p_arg_4,
+                                                            i_arg_1, i_arg_2, i_arg_3, i_arg_4):
+        handle = ofx_ctypes.CStructOfxHandle.from_address(ctype_param_handle)
 
         active_uid = handle.active_uid.decode("utf-8")
         name = handle.name.decode("utf-8")
@@ -227,13 +227,22 @@ class OfxParameterSuite(object):
         ofx_property_type = ctypes.cast(param['ctypes'].get('OfxParamPropType'), ctypes.c_char_p).value.decode('utf-8')
 
         if ofx_property_type == 'OfxParamTypeInteger':
-            param['value'][0] = ctypes.c_int(i_arg_1)
+            if platform.system() == 'Windows':
+                param['value'][0] = ctypes.c_int(i_arg_1)
+            else:
+                param['value'][0] = ctypes.c_int(p_arg_1)
         elif ofx_property_type == 'OfxParamTypeDouble':
             param['value'][0] = ctypes.c_double(d_arg_1)
         elif ofx_property_type == 'OfxParamTypeBoolean':
-            param['value'][0] = ctypes.c_int(i_arg_1)
+            if platform.system() == 'Windows':
+                param['value'][0] = ctypes.c_int(i_arg_1)
+            else:
+                param['value'][0] = ctypes.c_int(p_arg_1)
         elif ofx_property_type == 'OfxParamTypeChoice':
-            param['value'][0] = ctypes.c_int(i_arg_1)
+            if platform.system() == 'Windows':
+                param['value'][0] = ctypes.c_int(i_arg_1)
+            else:
+                param['value'][0] = ctypes.c_int(p_arg_1)
         elif ofx_property_type == 'OfxParamTypeRGBA':
             param['value'][0] = ctypes.c_double(d_arg_1)
             param['value'][1] = ctypes.c_double(d_arg_2)
@@ -247,72 +256,88 @@ class OfxParameterSuite(object):
             param['value'][0] = ctypes.c_double(d_arg_1)
             param['value'][1] = ctypes.c_double(d_arg_2)
         elif ofx_property_type == 'OfxParamTypeInteger2D':
-            param['value'][0] = ctypes.c_int(i_arg_1)
-            param['value'][1] = ctypes.c_int(i_arg_2)
+            if platform.system() == 'Windows':
+                param['value'][0] = ctypes.c_int(i_arg_1)
+                param['value'][1] = ctypes.c_int(i_arg_2)
+            else:
+                param['value'][0] = ctypes.c_int(p_arg_1)
+                param['value'][0] = ctypes.c_int(p_arg_2)
         elif ofx_property_type == 'OfxParamTypeDouble3D':
             param['value'][0] = ctypes.c_double(d_arg_1)
             param['value'][1] = ctypes.c_double(d_arg_2)
             param['value'][2] = ctypes.c_double(d_arg_3)
         elif ofx_property_type == 'OfxParamTypeInteger3D':
-            param['value'][0] = ctypes.c_int(i_arg_1)
-            param['value'][1] = ctypes.c_int(i_arg_2)
-            param['value'][2] = ctypes.c_int(i_arg_3)
+            if platform.system() == 'Windows':
+                param['value'][0] = ctypes.c_int(i_arg_1)
+                param['value'][1] = ctypes.c_int(i_arg_2)
+                param['value'][2] = ctypes.c_int(i_arg_3)
+            else:
+                param['value'][0] = ctypes.c_int(p_arg_1)
+                param['value'][0] = ctypes.c_int(p_arg_2)
+                param['value'][0] = ctypes.c_int(p_arg_3)
         elif ofx_property_type == 'OfxParamTypePushButton':
-            param['value'][0] = ctypes.c_int(i_arg_1)
+            if platform.system() == 'Windows':
+                param['value'][0] = ctypes.c_int(i_arg_1)
+            else:
+                param['value'][0] = ctypes.c_int(p_arg_1)
         elif ofx_property_type == 'OfxParamTypeCustom':
-            param['value'][0] = ctypes.create_string_buffer(ctypes.c_char_p(i_arg_1).value)
+            param['value'][0] = ctypes.create_string_buffer(ctypes.c_char_p(p_arg_1).value)
         elif ofx_property_type == 'OfxParamTypeString':
-            param['value'][0] = ctypes.create_string_buffer(ctypes.c_char_p(i_arg_1).value)
+            param['value'][0] = ctypes.create_string_buffer(ctypes.c_char_p(p_arg_1).value)
         else:
             logging.error('{} is not a valid type for paramSetValue ({})'.format(ofx_property_type, name))
-            return OFX_STATUS_FAILED
+            return ofx_status_codes.OFX_STATUS_FAILED
 
-        return OFX_STATUS_OK
+        return ofx_status_codes.OFX_STATUS_OK
 
-    def _param_set_value_at_time_callback(self, ctype_param_handle, ctype_time, d_arg_1, d_arg_2, d_arg_3, d_arg_4, i_arg_1, i_arg_2, i_arg_3, i_arg_4):
+    def _param_set_value_at_time_callback(self, ctype_param_handle, ctype_time, d_arg_1, d_arg_2, d_arg_3, d_arg_4,
+                                                                                p_arg_1, p_arg_2, p_arg_3, p_arg_4,
+                                                                                i_arg_1, i_arg_2, i_arg_3, i_arg_4):
         # Currently parameters don't animate so we just send back paramSetValue
-        return self._param_set_value_callback(ctype_param_handle, d_arg_1, d_arg_2, d_arg_3, d_arg_4, i_arg_1, i_arg_2, i_arg_3, i_arg_4)
+        return self._param_set_value_callback(ctype_param_handle, d_arg_1, d_arg_2, d_arg_3, d_arg_4,
+                                                                  p_arg_1, p_arg_2, p_arg_3, p_arg_4,
+                                                                  i_arg_1, i_arg_2, i_arg_3, i_arg_4)
 
     def _param_get_derivative_callback(self, ctype_param_handle, ctype_time, ctype_vargs):
         # Parametric parameters are not supported
-        return OFX_STATUS_FAILED
+        return ofx_status_codes.OFX_STATUS_FAILED
 
     def _param_get_integral_callback(self, ctype_param_handle, ctype_time1, ctype_time2, ctype_vargs):
         # Parametric parameters are not supported
-        return OFX_STATUS_FAILED
+        return ofx_status_codes.OFX_STATUS_FAILED
 
     def _param_get_num_keys_callback(self, ctype_param_handle, ctype_number_of_keys):
         # Nothing animates so always 0 keys
         ctype_number_of_keys.contents.value = 0
-        return OFX_STATUS_OK
+        return ofx_status_codes.OFX_STATUS_OK
 
     def _param_get_key_time_callback(self, ctype_param_handle, ctype_keys, ctype_time):
         # Nothing animates so always time 0
         ctype_time.contents.value = 0
-        return OFX_STATUS_OK
+        return ofx_status_codes.OFX_STATUS_OK
 
     def _param_get_key_index_callback(self, ctype_param_handle, ctype_time, ctype_direction, ctype_index):
         # No keys to return
         ctype_index.contents.value = -1
-        return OFX_STATUS_OK
+        return ofx_status_codes.OFX_STATUS_OK
 
     def _param_delete_key_callback(self, paramHandle, time):
         # No keys to delete
-        return OFX_STATUS_OK
+        return ofx_status_codes.OFX_STATUS_OK
 
     def _param_delete_all_keys_callback(self, paramHandle):
         # No keys to delete
-        return OFX_STATUS_OK
+        return ofx_status_codes.OFX_STATUS_OK
 
     def _param_copy_callback(self, paramTo, paramFrom, dstOffset, frameRange):
         # No UI so this shouldn't get called
-        return OFX_STATUS_OK
+        return ofx_status_codes.OFX_STATUS_OK
 
     def _param_edit_begin_callback(self, paramSet, name):
         # No undo/redo so this is not needed
-        return OFX_STATUS_OK
+        return ofx_status_codes.OFX_STATUS_OK
 
     def _param_edit_end_callback(self,paramSet):
         # No undo/redo so this is not needed
-        return OFX_STATUS_OK
+        return ofx_status_codes.OFX_STATUS_OK
 

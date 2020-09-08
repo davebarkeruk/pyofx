@@ -6,8 +6,6 @@
 # and is released under the "MIT License Agreement". Please see the LICENSE
 # file that should have been included as part of this package.
 
-from enum import Enum
-
 OFX_STATUS_OK =                       0
 OFX_STATUS_FAILED =                   1
 OFX_STATUS_ERR_FATAL =                2

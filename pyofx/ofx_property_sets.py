@@ -8,7 +8,7 @@
 
 import ctypes
 import logging
-from ofx_property_defs import OFX_PROPERTY_DEFS
+import ofx_property_defs
 
 class OfxPropertySet(object):
     def __init__(self):
@@ -49,7 +49,7 @@ class OfxPropertySet(object):
         elif property_type == 'ptr':
             new_value = ctypes.c_ulonglong(int(property_value))
         else:
-            logging.error('{} invalid type for single dimension property'.format(new_type))
+            logging.error('{} invalid type'.format(property_type))
             return False
 
         if key in self._data:
@@ -108,50 +108,50 @@ class OfxPropertySet(object):
             logging.error('{} already in property set'.format(key))
             return False
 
-        if key not in OFX_PROPERTY_DEFS:
+        if key not in ofx_property_defs.OFX_PROPERTY_DEFS:
             logging.error('{} not a supported OFX property'.format(key))
             return False
 
-        if OFX_PROPERTY_DEFS[key]['default'] is None and property_value is None:
+        if ofx_property_defs.OFX_PROPERTY_DEFS[key]['default'] is None and property_value is None:
             logging.error('{} requires property_value to be supplied'.format(key))
             return False
         elif property_value is None:
-            new_value = OFX_PROPERTY_DEFS[key]['default']
+            new_value = ofx_property_defs.OFX_PROPERTY_DEFS[key]['default']
         else:
             new_value = property_value
 
-        if isinstance(OFX_PROPERTY_DEFS[key]['param_type'], list):
+        if isinstance(ofx_property_defs.OFX_PROPERTY_DEFS[key]['param_type'], list):
             if property_type is None:
                 logging.error('{} requires property_type to be supplied'.format(key))
                 return False
-            if property_type not in OFX_PROPERTY_DEFS[key]['param_type']:
+            if property_type not in ofx_property_defs.OFX_PROPERTY_DEFS[key]['param_type']:
                 logging.error('{} does not support property_type {}'.format(key, property_type))
                 return False
             new_type = property_type
         else:
-            new_type = OFX_PROPERTY_DEFS[key]['param_type']
+            new_type = ofx_property_defs.OFX_PROPERTY_DEFS[key]['param_type']
 
-        if isinstance(new_value, list) and OFX_PROPERTY_DEFS[key]['dimensions'] == 1:
+        if isinstance(new_value, list) and ofx_property_defs.OFX_PROPERTY_DEFS[key]['dimensions'] == 1:
             logging.error('{} does not support list objects'.format(key))
             return False
 
-        if not isinstance(new_value, list) and OFX_PROPERTY_DEFS[key]['dimensions'] != 1:
+        if not isinstance(new_value, list) and ofx_property_defs.OFX_PROPERTY_DEFS[key]['dimensions'] != 1:
             logging.error('{} requires a list object'.format(key))
             return False
 
-        if OFX_PROPERTY_DEFS[key]['dimensions'] > 1:
-            if OFX_PROPERTY_DEFS[key]['dimensions'] != len(new_value):
+        if ofx_property_defs.OFX_PROPERTY_DEFS[key]['dimensions'] > 1:
+            if ofx_property_defs.OFX_PROPERTY_DEFS[key]['dimensions'] != len(new_value):
                 logging.error('len does not match dimensions for {} property'.format(key))
                 return False
 
-        if OFX_PROPERTY_DEFS[key]['valid_values'] is not None:
+        if ofx_property_defs.OFX_PROPERTY_DEFS[key]['valid_values'] is not None:
             if isinstance(new_value, list):
                 for i in new_value:
-                    if i not in OFX_PROPERTY_DEFS[key]['valid_values']:
+                    if i not in ofx_property_defs.OFX_PROPERTY_DEFS[key]['valid_values']:
                         logging.error('{} not a valid value for {} property'.format(i, key))
                         return False
             else:
-                if new_value not in OFX_PROPERTY_DEFS[key]['valid_values']:
+                if new_value not in ofx_property_defs.OFX_PROPERTY_DEFS[key]['valid_values']:
                     logging.error('{} not a valid value for {} property'.format(new_value, key))
                     return False
 
